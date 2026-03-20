@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+out/
+.next/
+cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Smart Contracts
+artifacts/
+typechain-types/
+cache_hardhat/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# Runtime data
+data/
+logs/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Docs (gitignored per project policy)
+docs/

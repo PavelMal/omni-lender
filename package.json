@@ -1,0 +1,48 @@
+{
+  "name": "omni-agent",
+  "version": "0.1.0",
+  "description": "Autonomous AI economic agent — Treasury, DeFi, Lending, Tipping — powered by Tether WDK + OpenClaw",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "demo": "tsx src/demo.ts",
+    "demo:borrower": "tsx src/borrower-demo.ts",
+    "demo:borrower:web": "tsx src/borrower-demo.ts --http",
+    "mcp": "tsx src/mcp-server.ts",
+    "test:integration": "tsx src/integration-test.ts",
+    "openclaw": "openclaw gateway --config openclaw.json",
+    "build": "tsup src/main.ts --format esm --dts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "web": "tsx src/web/server.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@tetherto/wdk": "^1.0.0-beta.6",
+    "@tetherto/wdk-protocol-lending-aave-evm": "^1.0.0-beta.3",
+    "@tetherto/wdk-wallet-evm": "^1.0.0-beta.8",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.0",
+    "ethers": "^6.13.0",
+    "express": "^5.2.1",
+    "permissionless": "^0.3.4",
+    "ws": "^8.19.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

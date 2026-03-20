@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build contracts
+        run: forge build
+        working-directory: ./contracts
+
+      - name: Run contract tests
+        run: forge test -vvv
+        working-directory: ./contracts
+
+      - name: Check contract sizes
+        run: forge build --sizes
+        working-directory: ./contracts
+
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate TASKS.yaml
+        run: |
+          pip install jsonschema pyyaml
+          python3 -c "
+          import yaml, json, jsonschema, sys
+          schema = json.load(open('framework/schemas/tasks.schema.json'))
+          tasks = yaml.safe_load(open('docs/TASKS.yaml'))
+          try:
+            jsonschema.validate(tasks, schema)
+            print('TASKS.yaml is valid')
+          except jsonschema.ValidationError as e:
+            print(f'Validation error: {e.message}')
+            sys.exit(1)
+          "
+
+      - name: Check no secrets in code
+        run: |
+          if grep -rn "PRIVATE_KEY\s*=" --include="*.ts" --include="*.js" --include="*.sol" .; then
+            echo "Potential secret found in source code"
+            exit 1
+          fi
