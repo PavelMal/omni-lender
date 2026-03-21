@@ -19,9 +19,13 @@ async function main(): Promise<void> {
   const { reason } = await import('./agent/brain.js');
   const { initTreasury, checkAndRebalance } = await import('./modules/treasury.js');
   const { scanAndAllocate, checkPositions } = await import('./modules/defi.js');
-  const { checkOverdueLoans } = await import('./modules/lending.js');
+  const { checkOverdueLoans, syncLoansFromChain } = await import('./modules/lending.js');
 
   await initWallet(undefined, 1000);
+
+  // Restore loan state from on-chain
+  const synced = await syncLoansFromChain();
+  if (synced > 0) log.info(`Restored ${synced} loans from blockchain`);
   initTreasury(getWalletState().totalBalance);
 
   log.info('Starting autonomous cycle (30s interval)...');

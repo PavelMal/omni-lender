@@ -1,0 +1,33 @@
+{
+  "name": "omni-lender",
+  "version": "0.1.0",
+  "description": "Autonomous AI Lending Agent — issues collateralized USDT loans via smart contract escrow",
+  "skills": [
+    {
+      "name": "lending",
+      "description": "Autonomous lending with credit scoring, LLM negotiation, and trust tiers",
+      "mcp": {
+        "command": "npx",
+        "args": ["tsx", "src/mcp-server.ts"],
+        "tools": [
+          "wdk_get_credit_profile",
+          "wdk_negotiate_loan",
+          "wdk_get_lending_terms",
+          "wdk_request_loan",
+          "wdk_repay_loan",
+          "wdk_get_loans",
+          "wdk_get_balance",
+          "wdk_get_audit_log"
+        ]
+      }
+    }
+  ],
+  "environment": {
+    "required": [
+      "ANTHROPIC_API_KEY",
+      "OPERATOR_SEED_PHRASE",
+      "SEPOLIA_RPC_URL",
+      "LENDING_ESCROW_ADDRESS"
+    ]
+  }
+}

@@ -120,9 +120,79 @@ async function main() {
     console.log(`  Borrower: ${borrowerAddress}`);
   }
 
-  // ─── Step 3: Rejected — no collateral ──────────────────────
+  // ─── Step 3: Check credit profile ──────────────────────────
 
-  console.log('\n--- Step 3: Request loan WITHOUT collateral ---');
+  console.log('\n--- Step 3: Check credit profile ---');
+  const creditProfile = parse(await client.callTool({
+    name: 'wdk_get_credit_profile',
+    arguments: { borrowerAddress },
+  }));
+  console.log(`  Credit score: ${creditProfile.creditScore}/100`);
+  console.log(`  Trust tier: ${creditProfile.trustTier.name} (Tier ${creditProfile.trustTier.tier})`);
+  console.log(`  Collateral required: ${creditProfile.collateralRequired}`);
+  console.log(`  History: ${creditProfile.totalLoans} loans, ${creditProfile.repaidLoans} repaid`);
+
+  // ─── Step 4: Negotiate loan terms ─────────────────────────
+
+  console.log('\n--- Step 4: Negotiate loan terms (LLM negotiation) ---');
+
+  // Round 1: Borrower proposes aggressive terms
+  console.log('  Round 1: Proposing $5 at 1% for 30 days...');
+  const neg1 = parse(await client.callTool({
+    name: 'wdk_negotiate_loan',
+    arguments: {
+      borrowerAddress,
+      borrowerName: 'DataProcessorAgent-42',
+      amount: 5,
+      rate: 1,
+      days: 30,
+    },
+  }));
+  console.log(`  Agent response (${neg1.status}): $${neg1.agentResponse?.amount} at ${neg1.agentResponse?.rate}% for ${neg1.agentResponse?.days} days`);
+  console.log(`  Reasoning: ${neg1.agentResponse?.reasoning}`);
+
+  // Round 2: Borrower adjusts closer to agent's counter
+  if (neg1.status === 'active' && neg1.agentResponse) {
+    const midAmount = Math.round((5 + neg1.agentResponse.amount) / 2 * 100) / 100;
+    const midRate = Math.round((1 + neg1.agentResponse.rate) / 2 * 100) / 100;
+    const midDays = Math.round((30 + neg1.agentResponse.days) / 2);
+    console.log(`\n  Round 2: Proposing $${midAmount} at ${midRate}% for ${midDays} days...`);
+    const neg2 = parse(await client.callTool({
+      name: 'wdk_negotiate_loan',
+      arguments: {
+        borrowerAddress,
+        borrowerName: 'DataProcessorAgent-42',
+        amount: midAmount,
+        rate: midRate,
+        days: midDays,
+      },
+    }));
+    console.log(`  Agent response (${neg2.status}): $${neg2.agentResponse?.amount} at ${neg2.agentResponse?.rate}% for ${neg2.agentResponse?.days} days`);
+    console.log(`  Reasoning: ${neg2.agentResponse?.reasoning}`);
+
+    // Round 3: Accept agent's terms if still negotiating
+    if (neg2.status === 'active' && neg2.agentResponse) {
+      console.log(`\n  Round 3: Accepting agent's counter-offer...`);
+      const neg3 = parse(await client.callTool({
+        name: 'wdk_negotiate_loan',
+        arguments: {
+          borrowerAddress,
+          borrowerName: 'DataProcessorAgent-42',
+          amount: neg2.agentResponse.amount,
+          rate: neg2.agentResponse.rate,
+          days: neg2.agentResponse.days,
+        },
+      }));
+      console.log(`  Final status: ${neg3.status}`);
+      if (neg3.agreedTerms) {
+        console.log(`  Agreed: $${neg3.agreedTerms.amount} at ${neg3.agreedTerms.rate}% for ${neg3.agreedTerms.days} days`);
+      }
+    }
+  }
+
+  // ─── Step 5: Rejected — no collateral ──────────────────────
+
+  console.log('\n--- Step 5: Request loan WITHOUT collateral ---');
 
   const rejected1 = parse(await client.callTool({
     name: 'wdk_request_loan',
@@ -138,9 +208,9 @@ async function main() {
   console.log(`  Decision: REJECTED`);
   console.log(`  Reason: ${rejected1.reason}`);
 
-  // ─── Step 4: Rejected — insufficient collateral ───────────
+  // ─── Step 6: Rejected — insufficient collateral ───────────
 
-  console.log('\n--- Step 4: Request $80 against $6 collateral ---');
+  console.log('\n--- Step 6: Request $80 against $6 collateral ---');
 
   const rejected2 = parse(await client.callTool({
     name: 'wdk_request_loan',
@@ -157,9 +227,9 @@ async function main() {
   console.log(`  Decision: REJECTED`);
   console.log(`  Reason: ${rejected2.reason.split('\n')[0]}`);
 
-  // ─── Step 5: Approved collateralized loan ─────────────────
+  // ─── Step 7: Approved collateralized loan ─────────────────
 
-  console.log('\n--- Step 5: Request $2 collateralized loan (should be approved) ---');
+  console.log('\n--- Step 7: Request $2 collateralized loan (should be approved) ---');
   console.log(`  Requesting $${LOAN_AMOUNT} USDT backed by ${COLLATERAL_ETH} ETH...`);
 
   const loanResult = parse(await client.callTool({
@@ -190,16 +260,16 @@ async function main() {
     console.log(`  TX: ${l.txHash}`);
   }
 
-  // ─── Step 6: Check active loans ───────────────────────────
+  // ─── Step 8: Check active loans ───────────────────────────
 
-  console.log('\n--- Step 6: Active loans ---');
+  console.log('\n--- Step 8: Active loans ---');
   const loans = parse(await client.callTool({ name: 'wdk_get_loans', arguments: {} }));
   console.log(`  Active: ${loans.activeLoans.length}`);
 
-  // ─── Step 7: Repay loan (on-chain via escrow) ─────────────
+  // ─── Step 9: Repay loan (on-chain via escrow) ─────────────
 
   if (loanResult.loan && isRealMode) {
-    console.log('\n--- Step 7: Repay loan via escrow ---');
+    console.log('\n--- Step 9: Repay loan via escrow ---');
     const provider = new ethers.JsonRpcProvider(
       process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com',
     );
@@ -243,7 +313,7 @@ async function main() {
       console.log(`  Loan remains active — collateral locked in escrow until repayment or liquidation.`);
     }
   } else if (loanResult.loan) {
-    console.log('\n--- Step 7: Repay loan (simulation) ---');
+    console.log('\n--- Step 9: Repay loan (simulation) ---');
     const repay = parse(await client.callTool({
       name: 'wdk_repay_loan',
       arguments: { loanId: loanResult.loan.id, amount: loanResult.loan.totalDue },
@@ -251,9 +321,21 @@ async function main() {
     console.log(`  ${repay.message}`);
   }
 
-  // ─── Step 8: Audit trail ──────────────────────────────────
+  // ─── Step 10: Final credit profile ──────────────────────────
 
-  console.log('\n--- Step 8: Audit trail ---');
+  console.log('\n--- Step 10: Updated credit profile ---');
+  const finalProfile = parse(await client.callTool({
+    name: 'wdk_get_credit_profile',
+    arguments: { borrowerAddress },
+  }));
+  console.log(`  Credit score: ${finalProfile.creditScore}/100 (was ${creditProfile.creditScore})`);
+  console.log(`  Trust tier: ${finalProfile.trustTier.name} (Tier ${finalProfile.trustTier.tier})`);
+  console.log(`  Loans repaid: ${finalProfile.repaidLoans}`);
+  console.log(`  Total borrowed: $${finalProfile.totalBorrowed}`);
+
+  // ─── Step 11: Audit trail ──────────────────────────────────
+
+  console.log('\n--- Step 11: Audit trail ---');
   const audit = parse(await client.callTool({ name: 'wdk_get_audit_log', arguments: { limit: 10 } }));
   for (const e of audit) {
     const r = e.reasoning?.slice(0, 100) || '';

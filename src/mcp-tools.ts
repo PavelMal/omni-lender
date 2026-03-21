@@ -28,6 +28,12 @@ import {
   processRepayment,
   getActiveLoans,
   checkOverdueLoans,
+  negotiateLoan,
+  getNegotiation,
+  getCreditProfile,
+  getTrustTier,
+  getDynamicRate,
+  TRUST_TIERS,
 } from './modules/lending.js';
 import { reason } from './agent/brain.js';
 
@@ -189,11 +195,15 @@ export function registerMcpTools(server: McpServer): void {
             escrowContract: escrowAddress,
             agentWallet: getWalletState().address,
             acceptedCollateral: ['ETH'],
-            collateralRatio: `${config.lending.collateralRatio}%`,
+            baseCollateralRatio: `${config.lending.collateralRatio}%`,
+            trustTiers: TRUST_TIERS.map(t => ({ tier: t.tier, name: t.name, collateral: `${t.collateralPercent}%`, requirements: t.requirements })),
             maxLoan: config.lending.maxLoan,
-            interestRate: `${config.lending.interestRate}%`,
+            baseInterestRate: `${config.lending.interestRate}%`,
+            currentDynamicRate: `${getDynamicRate().rate}%`,
+            poolUtilization: `${getDynamicRate().utilization}%`,
+            negotiation: 'Use wdk_negotiate_loan to negotiate custom terms before requesting a loan.',
             flow: escrowAddress
-              ? 'Call depositCollateral() on escrow contract with ETH, then call wdk_request_loan.'
+              ? '1. Call wdk_get_credit_profile to check your tier. 2. Optionally wdk_negotiate_loan for custom rates. 3. Call depositCollateral() on escrow. 4. Call wdk_request_loan with collateralized=true.'
               : 'Escrow not deployed. Loans run in simulation mode.',
           }),
         }],
@@ -305,6 +315,89 @@ export function registerMcpTools(server: McpServer): void {
       const active = getActiveLoans();
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({ activeLoans: active, newlyOverdue: overdue.length }) }],
+      };
+    },
+  );
+
+  // ─── T100: LLM Loan Negotiation ───────────────────────────
+
+  server.tool(
+    'wdk_negotiate_loan',
+    'Negotiate loan terms with the lending agent. Propose amount, interest rate, and duration. The agent counter-offers based on credit score, collateral, and market conditions. After agreement, call wdk_request_loan with agreed terms.',
+    {
+      borrowerAddress: z.string().describe('Your wallet address'),
+      borrowerName: z.string().describe('Identifier for the borrowing agent'),
+      amount: z.number().positive().describe('Proposed loan amount in USDT'),
+      rate: z.number().min(0).describe('Proposed interest rate (%)'),
+      days: z.number().int().positive().describe('Proposed repayment period in days'),
+    },
+    async ({ borrowerAddress, borrowerName, amount, rate, days }) => {
+      try {
+        const state = await negotiateLoan(
+          borrowerAddress,
+          borrowerName,
+          { amount, rate, days },
+          reason,
+        );
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              negotiationId: state.id,
+              status: state.status,
+              round: state.round,
+              maxRounds: state.maxRounds,
+              yourProposal: state.borrowerProposal,
+              agentResponse: state.agentCounterOffer ? {
+                amount: state.agentCounterOffer.amount,
+                rate: state.agentCounterOffer.rate,
+                days: state.agentCounterOffer.days,
+                reasoning: state.agentCounterOffer.reasoning,
+              } : undefined,
+              agreedTerms: state.agreedTerms,
+              hint: state.status === 'agreed'
+                ? 'Terms agreed! Call wdk_request_loan with the agreed amount, set collateralized=true if you deposited collateral.'
+                : state.status === 'active'
+                  ? 'Call wdk_negotiate_loan again with adjusted terms to continue negotiation.'
+                  : state.status === 'expired'
+                    ? 'Negotiation expired. Start a new one.'
+                    : 'Negotiation rejected. Terms were unacceptable.',
+            }),
+          }],
+        };
+      } catch (err) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: String(err) }) }],
+        };
+      }
+    },
+  );
+
+  // ─── T101: Credit Profile & Trust Tiers ────────────────────
+
+  server.tool(
+    'wdk_get_credit_profile',
+    'Get a borrower\'s credit profile including credit score, trust tier, loan history, and required collateral percentage.',
+    {
+      borrowerAddress: z.string().describe('Borrower wallet address'),
+    },
+    async ({ borrowerAddress }) => {
+      const profile = getCreditProfile(borrowerAddress);
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            ...profile,
+            trustTiers: TRUST_TIERS.map(t => ({
+              tier: t.tier,
+              name: t.name,
+              collateralRequired: `${t.collateralPercent}%`,
+              requirements: t.requirements,
+              current: t.tier === profile.trustTier.tier,
+            })),
+          }),
+        }],
       };
     },
   );

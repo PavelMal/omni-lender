@@ -265,7 +265,61 @@ agentRouter.delete('/reset/:addr', async (req, res) => {
 
 // GET /lending-stats — global lending module stats (earnings, active loans, etc.)
 agentRouter.get('/lending-stats', async (_req, res) => {
-  res.json(getLendingStats());
+  const { getCreditProfile, getAllLoans } = await import('../../modules/lending.js');
+  const { getDynamicRate } = await import('../../modules/lending.js');
+  const stats = getLendingStats();
+  const dynamicRate = getDynamicRate();
+
+  // Build borrowers list from loan history
+  const loans = getAllLoans();
+  const borrowerMap = new Map<string, any>();
+  for (const loan of loans) {
+    const addr = loan.borrowerAddress;
+    if (!borrowerMap.has(addr)) {
+      const profile = getCreditProfile(addr);
+      borrowerMap.set(addr, {
+        address: addr,
+        creditScore: profile.creditScore,
+        trustTier: profile.trustTier.tier,
+        totalBorrowed: profile.totalBorrowed,
+        totalRepaid: profile.totalBorrowed - loans.filter(l => l.borrowerAddress === addr && l.status === 'active').reduce((s, l) => s + l.principal, 0),
+        activeLoans: loans.filter(l => l.borrowerAddress === addr && l.status === 'active').length,
+        defaultRate: profile.riskMetrics.defaultRate,
+      });
+    }
+  }
+
+  res.json({ ...stats, dynamicRate, borrowers: Array.from(borrowerMap.values()) });
+});
+
+// GET /all-loans — all loans from lending module (global, not per-user)
+agentRouter.get('/all-loans', async (_req, res) => {
+  const { getAllLoans } = await import('../../modules/lending.js');
+  res.json(getAllLoans());
+});
+
+// GET /borrowers — borrower list with credit profiles
+agentRouter.get('/borrowers', async (_req, res) => {
+  const { getCreditProfile, getAllLoans } = await import('../../modules/lending.js');
+  const loans = getAllLoans();
+  const seen = new Set<string>();
+  const borrowers = [];
+  for (const loan of loans) {
+    if (seen.has(loan.borrowerAddress)) continue;
+    seen.add(loan.borrowerAddress);
+    const profile = getCreditProfile(loan.borrowerAddress);
+    const activeLoanCount = loans.filter(l => l.borrowerAddress === loan.borrowerAddress && l.status === 'active').length;
+    borrowers.push({
+      address: loan.borrowerAddress,
+      creditScore: profile.creditScore,
+      trustTier: profile.trustTier.tier,
+      totalBorrowed: profile.totalBorrowed,
+      totalRepaid: profile.totalBorrowed - loans.filter(l => l.borrowerAddress === loan.borrowerAddress && l.status === 'active').reduce((s, l) => s + l.principal, 0),
+      activeLoans: activeLoanCount,
+      defaultRate: profile.riskMetrics.defaultRate,
+    });
+  }
+  res.json(borrowers);
 });
 
 // GET /aave-balance/:addr — aUSDT balance (principal + yield)
