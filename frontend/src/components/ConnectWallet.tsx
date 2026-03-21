@@ -22,31 +22,45 @@ export function ConnectWallet() {
 
   if (isConnected && address) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-        <span style={{
-          padding: `${spacing.xs}px ${spacing.md}px`,
-          borderRadius: radii.sm,
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: spacing.sm,
+          padding: `3px ${spacing.sm}px`,
           border: `1px solid ${colors.border}`,
+          borderRadius: radii.sm,
           background: colors.bgCard,
-          color: colors.textSecondary,
-          fontSize: fontSizes.xs,
-          fontFamily: fonts.mono,
         }}>
-          {address.slice(0, 6)}...{address.slice(-4)}
-        </span>
+          <div style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: colors.accent,
+            boxShadow: `0 0 6px ${colors.accent}`,
+          }} />
+          <span style={{
+            color: colors.accent,
+            fontSize: fontSizes.xs,
+            fontFamily: fonts.mono,
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+          }}>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </span>
+        </div>
         <button
           onClick={() => disconnect()}
           style={{
-            padding: `${spacing.xs}px ${spacing.sm}px`,
+            padding: `3px ${spacing.sm}px`,
             borderRadius: radii.sm,
             border: `1px solid ${colors.border}`,
             background: 'transparent',
             color: colors.textMuted,
             cursor: 'pointer',
             fontSize: fontSizes.xs,
+            fontFamily: fonts.mono,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
           }}
         >
-          Disconnect
+          DC
         </button>
       </div>
     );
@@ -62,15 +76,18 @@ export function ConnectWallet() {
       style={{
         padding: `${spacing.sm}px ${spacing.xl}px`,
         borderRadius: radii.sm,
-        border: 'none',
+        border: `1px solid ${colors.accent}44`,
         background: colors.accent,
         color: '#000',
         cursor: 'pointer',
-        fontSize: fontSizes.md,
+        fontSize: fontSizes.sm,
         fontWeight: 700,
+        fontFamily: fonts.mono,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
       }}
     >
-      Connect Wallet
+      CONNECT WALLET
     </button>
   );
 }

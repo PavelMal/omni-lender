@@ -13,22 +13,65 @@ import { ConnectWallet } from './components/ConnectWallet';
 import { useWriteContract } from 'wagmi';
 import { USDT_CONTRACT, USDT_ABI } from './wagmi';
 
-// ── inject font ──
+// ── inject font + global styles ──
 if (typeof document !== 'undefined' && !document.querySelector('[data-omni-font]')) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap';
+  link.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap';
   link.setAttribute('data-omni-font', '1');
   document.head.appendChild(link);
+
+  // Inject global styles for scrollbar + blink animation + scanline
+  const style = document.createElement('style');
+  style.textContent = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #000; color: #ccc; }
+    body { font-family: 'JetBrains Mono', monospace; }
+
+    /* Terminal blink */
+    @keyframes termBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,136,0.01) 2px,
+        rgba(0,255,136,0.01) 4px
+      );
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 0; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
+
+    /* Selection */
+    ::selection { background: #00ff8833; color: #fff; }
+
+    /* Table row hover */
+    tbody tr:hover { background: #111 !important; }
+  `;
+  document.head.appendChild(style);
 }
 
 type Tab = 'overview' | 'borrowers' | 'loans' | 'activity';
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview',  label: 'Overview' },
-  { key: 'borrowers', label: 'Borrowers' },
-  { key: 'loans',     label: 'Loans' },
-  { key: 'activity',  label: 'Activity' },
+  { key: 'overview',  label: 'OVERVIEW' },
+  { key: 'borrowers', label: 'BORROWERS' },
+  { key: 'loans',     label: 'LOANS' },
+  { key: 'activity',  label: 'ACTIVITY' },
 ];
 
 export default function App() {
@@ -58,36 +101,70 @@ export default function App() {
     f(); const i = setInterval(f, 5000); return () => clearInterval(i);
   }, [agentReady]);
 
-  if (!isConnected) return <div style={{ maxWidth: 960, margin: '0 auto', padding: spacing.xxl, fontFamily: fonts.body }}><Landing /></div>;
+  // ── Not connected: show landing ──
+  if (!isConnected) {
+    return (
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: spacing.xxl, fontFamily: fonts.mono }}>
+        <Landing />
+      </div>
+    );
+  }
 
+  // ── Not set up: show setup flow ──
   if (!agentReady) {
     return (
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: spacing.xxl, fontFamily: fonts.body }}>
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: spacing.xxl, fontFamily: fonts.mono }}>
         <SetupFlow ownerAddress={address!} onReady={(op) => { setOperatorAddress(op); setAgentReady(true); }} />
       </div>
     );
   }
 
-  const c = colors, s = spacing, f = fontSizes, r = radii;
+  const c = colors, s = spacing, f = fontSizes;
   const bal = status?.balance?.usdt ?? 0;
   const loans = status?.loans ?? [];
   const activeCount = loans.filter(l => l.status === 'active').length;
-  const profit = lendingStats?.totalInterestEarned ?? 0;
 
   return (
-    <div style={{ maxWidth: 1120, margin: '0 auto', padding: `${s.lg}px ${s.lg}px`, minHeight: '100vh', fontFamily: fonts.body }}>
+    <div style={{
+      maxWidth: 1200, margin: '0 auto',
+      padding: `0 ${s.lg}px`,
+      minHeight: '100vh', fontFamily: fonts.mono,
+    }}>
 
-      {/* ── Top bar ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: s.xl }}>
-        <span style={{ fontSize: f.xl, fontWeight: 700, color: c.textPrimary, fontFamily: fonts.mono, letterSpacing: -1 }}>
-          OmniLender
-        </span>
+      {/* ══ Top bar ══════════════════════════════════════════════════ */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: `${s.md}px 0`,
+        borderBottom: `1px solid ${c.border}`,
+      }}>
+        {/* Left: branding + inline stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: s.lg }}>
+          <span style={{
+            fontSize: f.lg, fontWeight: 700, color: c.accent,
+            letterSpacing: '-0.02em',
+            textShadow: `0 0 20px ${c.accent}33`,
+          }}>
+            OMNILENDER
+          </span>
+
+          {/* Separator */}
+          <span style={{ color: c.border, fontSize: f.lg }}>|</span>
+
+          {/* Inline pool stats */}
+          <div style={{ display: 'flex', gap: s.lg, fontSize: f.xs, color: c.textMuted }}>
+            <span>POOL <span style={{ color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>${bal.toFixed(2)}</span></span>
+            <span>ACTIVE <span style={{ color: activeCount > 0 ? c.accent : c.textMuted, fontVariantNumeric: 'tabular-nums' }}>{activeCount}</span></span>
+            <span>RATE <span style={{ color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>{((lendingStats?.dynamicRate ?? 0) * 100).toFixed(1)}%</span></span>
+          </div>
+        </div>
+
+        {/* Right: wallet */}
         <ConnectWallet />
       </div>
 
-      {/* ── Tab bar ─────────────────────────────────────────── */}
+      {/* ══ Tab bar ══════════════════════════════════════════════════ */}
       <nav style={{
-        display: 'flex', gap: 0, marginBottom: s.xl,
+        display: 'flex', gap: 0,
         borderBottom: `1px solid ${c.border}`,
       }}>
         {TABS.map(t => {
@@ -100,35 +177,79 @@ export default function App() {
                 padding: `${s.sm}px ${s.lg}px`,
                 background: 'none', border: 'none',
                 borderBottom: active ? `2px solid ${c.accent}` : '2px solid transparent',
-                color: active ? c.textPrimary : c.textMuted,
-                fontSize: f.sm, fontWeight: active ? 600 : 400,
-                cursor: 'pointer', transition: 'all 0.15s ease',
-                fontFamily: fonts.body,
+                color: active ? c.accent : c.textMuted,
+                fontSize: 9, fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: fonts.mono,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                transition: 'color 0.1s',
               }}
             >
               {t.label}
             </button>
           );
         })}
+
+        {/* Right-aligned system time */}
+        <div style={{
+          marginLeft: 'auto', display: 'flex', alignItems: 'center',
+          fontSize: 9, color: c.textMuted, fontVariantNumeric: 'tabular-nums',
+          padding: `0 ${s.sm}px`,
+          gap: s.sm,
+        }}>
+          <SystemClock />
+        </div>
       </nav>
 
-      {/* ── Content ─────────────────────────────────────────── */}
-      {tab === 'overview' && (
-        <OverviewTab status={status} ownerAddress={address!} lendingStats={lendingStats} />
-      )}
-      {tab === 'borrowers' && (
-        <BorrowersTab lendingStats={lendingStats} />
-      )}
-      {tab === 'loans' && (
-        <LendingTab />
-      )}
-      {tab === 'activity' && (
-        <div style={{ background: c.bgCard, border: `1px solid ${c.border}`, borderRadius: r.md, padding: s.lg }}>
-          <AuditFeed ownerAddress={address!} />
-        </div>
-      )}
+      {/* ══ Content ══════════════════════════════════════════════════ */}
+      <div style={{ padding: `${s.lg}px 0` }}>
+        {tab === 'overview' && (
+          <OverviewTab status={status} ownerAddress={address!} lendingStats={lendingStats} />
+        )}
+        {tab === 'borrowers' && (
+          <BorrowersTab lendingStats={lendingStats} />
+        )}
+        {tab === 'loans' && (
+          <LendingTab />
+        )}
+        {tab === 'activity' && (
+          <div style={{
+            background: c.bgCard,
+            border: `1px solid ${c.border}`,
+            borderRadius: radii.sm,
+            padding: s.lg,
+          }}>
+            <AuditFeed ownerAddress={address!} />
+          </div>
+        )}
+      </div>
 
-      <div style={{ height: s.xxl }} />
+      {/* ══ Footer bar ═══════════════════════════════════════════════ */}
+      <div style={{
+        borderTop: `1px solid ${c.border}`,
+        padding: `${s.sm}px 0`,
+        display: 'flex', justifyContent: 'space-between',
+        fontSize: 9, color: c.textMuted,
+        letterSpacing: '0.05em',
+      }}>
+        <span>SEPOLIA TESTNET</span>
+        <span>OMNILENDER v1.0</span>
+      </div>
     </div>
+  );
+}
+
+// ── System clock component ──
+function SystemClock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const i = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(i);
+  }, []);
+  return (
+    <span>
+      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+    </span>
   );
 }

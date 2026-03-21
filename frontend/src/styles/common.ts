@@ -1,13 +1,13 @@
 import type { CSSProperties } from 'react';
-import { colors, radii, spacing, fontSizes } from './tokens';
+import { colors, radii, spacing, fontSizes, fonts } from './tokens';
 
 export function cardStyle(accent?: string): CSSProperties {
   return {
     background: colors.bgCard,
     border: `1px solid ${accent ? accent + '33' : colors.border}`,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    transition: 'border-color 0.2s ease, background 0.2s ease',
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    transition: 'border-color 0.15s',
   };
 }
 
@@ -15,25 +15,28 @@ export function buttonStyle(
   variant: 'primary' | 'secondary' | 'danger' | 'ghost',
 ): CSSProperties {
   const base: CSSProperties = {
-    padding: `${spacing.sm}px ${spacing.lg}px`,
+    padding: `${spacing.xs}px ${spacing.md}px`,
     borderRadius: radii.sm,
-    fontSize: fontSizes.md,
+    fontSize: fontSizes.sm,
     fontWeight: 600,
+    fontFamily: fonts.mono,
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'all 0.15s',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     lineHeight: 1,
     whiteSpace: 'nowrap',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.05em',
   };
 
   switch (variant) {
     case 'primary':
       return {
         ...base,
-        background: colors.brand,
+        background: colors.accent,
         color: '#000',
         border: 'none',
         fontWeight: 700,
@@ -48,9 +51,9 @@ export function buttonStyle(
     case 'danger':
       return {
         ...base,
-        background: colors.red,
-        color: '#fff',
-        border: 'none',
+        background: 'transparent',
+        color: colors.danger,
+        border: `1px solid ${colors.danger}44`,
         fontWeight: 700,
       };
     case 'ghost':
@@ -71,9 +74,10 @@ export function inputStyle(): CSSProperties {
     borderRadius: radii.sm,
     padding: `${spacing.sm}px ${spacing.md}px`,
     fontSize: fontSizes.md,
+    fontFamily: fonts.mono,
     color: colors.textPrimary,
     outline: 'none',
-    transition: 'border-color 0.2s ease',
+    transition: 'border-color 0.15s',
     width: '100%',
   };
 }
@@ -85,12 +89,15 @@ export function badgeStyle(color: string): CSSProperties {
     gap: spacing.xs,
     fontSize: fontSizes.xs,
     fontWeight: 600,
-    padding: `3px ${spacing.sm}px`,
-    borderRadius: radii.pill,
-    background: color + '18',
+    fontFamily: fonts.mono,
+    padding: `2px ${spacing.sm}px`,
+    borderRadius: radii.sm,
+    background: color + '15',
     color: color,
     lineHeight: 1.4,
     whiteSpace: 'nowrap',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.05em',
   };
 }
 

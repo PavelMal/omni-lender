@@ -1,11 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { useAuditStream } from '../hooks/useAuditStream';
 import { API_BASE } from '../api';
-import { colors, spacing, radii, fontSizes } from '../styles/tokens';
+import { colors, spacing, radii, fontSizes, fonts } from '../styles/tokens';
 
 const PAGE_SIZE = 20;
-
-// ---------- Lending event filter ----------
 
 const LENDING_KEYWORDS = ['loan', 'negotiation', 'collateral', 'interest', 'liquidat', 'repay', 'credit'];
 
@@ -16,13 +14,11 @@ function isLendingEvent(e: any): boolean {
   return LENDING_KEYWORDS.some(kw => action.includes(kw)) || e.module === 'lending';
 }
 
-// ---------- Status colors ----------
-
 function statusColor(status: string): string {
   switch (status) {
     case 'approved':
     case 'executed':
-      return colors.success;
+      return colors.accent;
     case 'rejected':
     case 'failed':
       return colors.danger;
@@ -31,28 +27,26 @@ function statusColor(status: string): string {
   }
 }
 
-// ---------- Human-readable labels ----------
-
 const humanLabels: Record<string, string> = {
-  loan_rejected: 'Loan rejected',
-  loan_repaid: 'Loan repaid',
-  loan_overdue: 'Loan overdue',
-  collateral_loan_approved: 'Collateralized loan approved',
-  collateral_loan_rejected: 'Collateralized loan rejected',
-  collateral_returned: 'Collateral returned',
-  collateral_liquidated: 'Collateral liquidated',
-  interest_reinvested: 'Interest reinvested',
-  negotiation_round: 'Negotiation round',
-  negotiation_complete: 'Negotiation complete',
-  credit_check: 'Credit check',
-  spend_approved: 'Spend approved',
-  spend_rejected: 'Spend rejected',
-  transaction_executed: 'Transaction executed',
-  funds_received: 'Funds received',
-  defi_deposit: 'DeFi deposit',
-  defi_withdraw: 'DeFi withdrawal',
-  aave_supply: 'DeFi deposit (Aave V3)',
-  erc4626_deposit: 'DeFi deposit (Vault)',
+  loan_rejected: 'LOAN_REJECTED',
+  loan_repaid: 'LOAN_REPAID',
+  loan_overdue: 'LOAN_OVERDUE',
+  collateral_loan_approved: 'COLLATERAL_LOAN_APPROVED',
+  collateral_loan_rejected: 'COLLATERAL_LOAN_REJECTED',
+  collateral_returned: 'COLLATERAL_RETURNED',
+  collateral_liquidated: 'COLLATERAL_LIQUIDATED',
+  interest_reinvested: 'INTEREST_REINVESTED',
+  negotiation_round: 'NEGOTIATION_ROUND',
+  negotiation_complete: 'NEGOTIATION_COMPLETE',
+  credit_check: 'CREDIT_CHECK',
+  spend_approved: 'SPEND_APPROVED',
+  spend_rejected: 'SPEND_REJECTED',
+  transaction_executed: 'TX_EXECUTED',
+  funds_received: 'FUNDS_RECEIVED',
+  defi_deposit: 'DEFI_DEPOSIT',
+  defi_withdraw: 'DEFI_WITHDRAWAL',
+  aave_supply: 'DEFI_DEPOSIT_AAVE',
+  erc4626_deposit: 'DEFI_DEPOSIT_VAULT',
 };
 
 interface Props {
@@ -64,100 +58,125 @@ function AuditEntry({ e }: { e: any }) {
   const isReal = e.txHash && !e.txHash.startsWith('0xsim');
   const isSim = e.txHash && e.txHash.startsWith('0xsim');
   const firstLine = (e.reasoning ?? '').split('\n')[0];
-  const hasDetail = (e.reasoning ?? '').length > 120 || (e.reasoning ?? '').includes('\n\n');
+  const hasDetail = (e.reasoning ?? '').length > 100 || (e.reasoning ?? '').includes('\n\n');
   const sc = statusColor(e.status);
+
+  const ts = new Date(e.timestamp);
+  const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const dateStr = ts.toLocaleDateString([], { month: '2-digit', day: '2-digit' });
 
   return (
     <div style={{
       padding: `${spacing.sm}px 0`,
       borderBottom: `1px solid ${colors.border}`,
+      fontFamily: fonts.mono,
       fontSize: fontSizes.sm,
     }}>
-      <div style={{ display: 'flex', gap: spacing.sm, alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{
-          width: 5, height: 5,
-          borderRadius: radii.pill,
-          background: sc,
+      <div style={{ display: 'flex', gap: spacing.sm, alignItems: 'center' }}>
+        {/* Timestamp */}
+        <span style={{
+          color: colors.textMuted,
+          fontSize: fontSizes.xs,
+          fontVariantNumeric: 'tabular-nums',
+          minWidth: 90,
           flexShrink: 0,
-          opacity: 0.8,
-        }} />
-        <span style={{ color: sc, fontWeight: 600 }}>
-          {humanLabels[e.action] ?? (e.action ?? '').replace(/_/g, ' ')}
+        }}>
+          {dateStr} {timeStr}
         </span>
+
+        {/* Status dot */}
+        <div style={{
+          width: 6, height: 6,
+          borderRadius: '50%',
+          background: sc,
+          boxShadow: `0 0 4px ${sc}66`,
+          flexShrink: 0,
+        }} />
+
+        {/* Action label */}
+        <span style={{
+          color: sc,
+          fontWeight: 600,
+          fontSize: fontSizes.xs,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}>
+          {humanLabels[e.action] ?? (e.action ?? '').replace(/_/g, '_').toUpperCase()}
+        </span>
+
+        {/* Amount */}
         {e.amount !== undefined && (
-          <span style={{ color: colors.textPrimary, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{
+            color: colors.textPrimary,
+            fontVariantNumeric: 'tabular-nums',
+            fontSize: fontSizes.xs,
+          }}>
             ${e.amount} {e.asset ?? 'USDT'}
           </span>
         )}
+
+        {/* TX links */}
         {isReal && (
           <a
             href={`https://sepolia.etherscan.io/tx/${e.txHash}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              fontSize: fontSizes.xs,
-              padding: '2px 8px',
+              fontSize: 9,
+              padding: '1px 6px',
               borderRadius: radii.sm,
-              background: `${colors.accent}10`,
-              border: `1px solid ${colors.accent}25`,
+              border: `1px solid ${colors.accent}33`,
               color: colors.accent,
               textDecoration: 'none',
               fontWeight: 500,
             }}
           >
-            Etherscan
+            TX
           </a>
         )}
         {isSim && (
           <span style={{
-            fontSize: 10,
-            padding: '2px 6px',
+            fontSize: 9,
+            padding: '1px 6px',
             borderRadius: radii.sm,
-            background: `${colors.warning}10`,
+            border: `1px solid ${colors.warning}33`,
             color: colors.warning,
           }}>
-            simulated
+            SIM
           </span>
         )}
-        <span style={{
-          color: colors.textMuted,
-          marginLeft: 'auto',
-          fontSize: fontSizes.xs,
-          flexShrink: 0,
-          fontVariantNumeric: 'tabular-nums',
-        }}>
-          {new Date(e.timestamp).toLocaleString()}
-        </span>
       </div>
+
+      {/* Reasoning */}
       {(e.reasoning ?? '') && (
         <div
           style={{
             color: colors.textMuted,
             fontSize: fontSizes.xs,
-            marginTop: spacing.xs,
-            marginLeft: spacing.lg,
-            lineHeight: 1.6,
+            marginTop: 3,
+            marginLeft: 106,
+            lineHeight: 1.5,
             cursor: hasDetail ? 'pointer' : 'default',
             wordBreak: 'break-word',
           }}
           onClick={() => hasDetail && setExpanded(!expanded)}
         >
-          <span>{expanded ? '' : (firstLine.length > 120 ? firstLine.slice(0, 120) + '...' : firstLine)}</span>
+          <span>{expanded ? '' : (firstLine.length > 100 ? firstLine.slice(0, 100) + '...' : firstLine)}</span>
           {expanded && (
             <pre style={{
               whiteSpace: 'pre-wrap',
-              fontFamily: 'inherit',
-              margin: '4px 0 0',
+              fontFamily: fonts.mono,
+              margin: '2px 0 0',
               color: colors.textSecondary,
               fontSize: fontSizes.xs,
-              lineHeight: 1.6,
+              lineHeight: 1.5,
             }}>
               {e.reasoning}
             </pre>
           )}
           {hasDetail && (
-            <span style={{ color: colors.accent, fontSize: 10, marginLeft: 4, opacity: 0.7 }}>
-              {expanded ? ' [collapse]' : ' [more]'}
+            <span style={{ color: colors.accent, fontSize: 9, marginLeft: 4, opacity: 0.6 }}>
+              {expanded ? ' [-]' : ' [+]'}
             </span>
           )}
         </div>
@@ -172,10 +191,7 @@ export function AuditFeed({ ownerAddress }: Props) {
   const [confirmClear, setConfirmClear] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Filter to lending-related events only
   const lendingEvents = events.filter(isLendingEvent);
-
-  // Newest first
   const reversed = [...lendingEvents].reverse();
   const visible = reversed.slice(0, visibleCount);
   const hasMore = visibleCount < reversed.length;
@@ -189,60 +205,57 @@ export function AuditFeed({ ownerAddress }: Props) {
   }, [hasMore]);
 
   return (
-    <div style={{
-      marginTop: spacing.xl,
-      background: colors.bgCard,
-      border: `1px solid ${colors.border}`,
-      borderRadius: radii.lg,
-      padding: spacing.xl,
-    }}>
+    <div style={{ fontFamily: fonts.mono }}>
+      {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
+        paddingBottom: spacing.sm,
+        borderBottom: `1px solid ${colors.border}`,
       }}>
-        <h3 style={{
-          fontSize: fontSizes.md,
-          fontWeight: 600,
-          color: colors.textSecondary,
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-        }}>
-          Lending Activity
-        </h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+          <span style={{
+            fontSize: fontSizes.xs,
+            fontWeight: 600,
+            color: colors.textMuted,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+          }}>
+            AUDIT LOG
+          </span>
+          <span style={{
+            fontSize: fontSizes.xs,
+            color: colors.textMuted,
+          }}>
+            [{lendingEvents.length}]
+          </span>
+        </div>
         <div style={{ display: 'flex', gap: spacing.sm, alignItems: 'center' }}>
           {lendingEvents.length > 0 && (
             <>
-              <span style={{ fontSize: fontSizes.xs, color: colors.textMuted }}>
-                {visible.length} / {lendingEvents.length}
-              </span>
               {!confirmClear ? (
                 <button
                   onClick={() => setConfirmClear(true)}
                   style={{
-                    fontSize: fontSizes.xs,
-                    padding: '3px 8px',
+                    fontSize: 9,
+                    padding: '2px 6px',
                     borderRadius: radii.sm,
                     background: 'transparent',
                     border: `1px solid ${colors.border}`,
                     color: colors.textMuted,
                     cursor: 'pointer',
+                    fontFamily: fonts.mono,
+                    textTransform: 'uppercase',
                   }}
                 >
-                  Clear
+                  CLR
                 </button>
               ) : (
                 <div style={{
-                  display: 'flex',
-                  gap: 6,
-                  alignItems: 'center',
-                  background: `${colors.danger}08`,
-                  border: `1px solid ${colors.danger}20`,
-                  borderRadius: radii.sm,
-                  padding: `${spacing.xs}px ${spacing.md}px`,
+                  display: 'flex', gap: 4, alignItems: 'center',
                 }}>
-                  <span style={{ fontSize: fontSizes.xs, color: colors.danger }}>Delete all?</span>
                   <button
                     onClick={() => {
                       fetch(`${API_BASE}/api/agent/audit/${ownerAddress}`, { method: 'DELETE' })
@@ -250,69 +263,80 @@ export function AuditFeed({ ownerAddress }: Props) {
                         .catch(() => {});
                     }}
                     style={{
-                      fontSize: fontSizes.xs,
-                      padding: '2px 10px',
-                      borderRadius: radii.sm,
-                      background: colors.danger,
-                      border: 'none',
-                      color: '#000',
-                      cursor: 'pointer',
-                      fontWeight: 600,
+                      fontSize: 9, padding: '2px 8px', borderRadius: radii.sm,
+                      background: colors.danger, border: 'none',
+                      color: '#000', cursor: 'pointer', fontWeight: 700, fontFamily: fonts.mono,
                     }}
                   >
-                    Yes
+                    CONFIRM
                   </button>
                   <button
                     onClick={() => setConfirmClear(false)}
                     style={{
-                      fontSize: fontSizes.xs,
-                      padding: '2px 10px',
-                      borderRadius: radii.sm,
-                      background: 'transparent',
-                      border: `1px solid ${colors.border}`,
-                      color: colors.textMuted,
-                      cursor: 'pointer',
+                      fontSize: 9, padding: '2px 8px', borderRadius: radii.sm,
+                      background: 'transparent', border: `1px solid ${colors.border}`,
+                      color: colors.textMuted, cursor: 'pointer', fontFamily: fonts.mono,
                     }}
                   >
-                    No
+                    NO
                   </button>
                 </div>
               )}
             </>
           )}
-          <span style={{
-            fontSize: fontSizes.xs,
-            padding: '3px 8px',
-            borderRadius: radii.pill,
-            background: connected ? `${colors.accent}12` : `${colors.danger}12`,
+          {/* Live indicator */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            fontSize: 9, fontWeight: 600,
             color: connected ? colors.accent : colors.danger,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
           }}>
-            {connected ? 'Live' : 'Offline'}
-          </span>
+            <div style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: connected ? colors.accent : colors.danger,
+              boxShadow: connected ? `0 0 6px ${colors.accent}` : 'none',
+              animation: connected ? 'termBlink 2s infinite' : 'none',
+            }} />
+            {connected ? 'LIVE' : 'OFFLINE'}
+          </div>
         </div>
       </div>
 
+      {/* Feed */}
       {lendingEvents.length === 0 ? (
-        <p style={{ color: colors.textMuted, fontSize: fontSizes.sm }}>
-          Waiting for lending events...
-        </p>
+        <div style={{
+          color: colors.textMuted, fontSize: fontSizes.sm, padding: `${spacing.xl}px 0`,
+          display: 'flex', alignItems: 'center', gap: spacing.sm,
+        }}>
+          <span>Awaiting events</span>
+          <span style={{ animation: 'termBlink 1s step-end infinite' }}>_</span>
+        </div>
       ) : (
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           style={{ maxHeight: 600, overflowY: 'auto' }}
         >
+          {/* Blinking cursor at top */}
+          <div style={{
+            padding: `${spacing.xs}px 0`,
+            color: colors.accent,
+            fontSize: fontSizes.xs,
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <span style={{ animation: 'termBlink 1s step-end infinite', fontWeight: 700 }}>{'>'}</span>
+            <span style={{ color: colors.textMuted }}>latest</span>
+          </div>
           {visible.map((e, i) => (
             <AuditEntry key={`${e.timestamp}-${i}`} e={e} />
           ))}
           {hasMore && (
             <div style={{
-              textAlign: 'center',
-              padding: spacing.md,
-              color: colors.textMuted,
-              fontSize: fontSizes.xs,
+              textAlign: 'center', padding: spacing.md,
+              color: colors.textMuted, fontSize: fontSizes.xs,
             }}>
-              Scroll for more...
+              ...scroll for more
             </div>
           )}
         </div>

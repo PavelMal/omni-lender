@@ -1,31 +1,33 @@
-// OmniLender — Industrial fintech dark theme
+// OmniLender — Terminal OS / Mission Control theme
 
 export const colors = {
-  accent: '#34d399',       // emerald-400
-  accentDim: '#059669',    // emerald-600
+  // Primary palette
+  accent: '#00ff88',        // phosphor green
+  accentDim: '#00cc6a',     // dimmed green
+  accentGlow: '#00ff8822',  // green glow
 
-  success: '#4ade80',      // green-400
-  danger: '#f87171',       // red-400
-  warning: '#fbbf24',      // amber-400
+  success: '#00ff88',       // green
+  danger: '#ff3333',        // red
+  warning: '#ffb700',       // amber
 
-  bgPrimary: '#09090b',    // zinc-950
-  bgCard: '#18181b',       // zinc-900
-  bgCardHover: '#27272a',  // zinc-800
-  bgInset: '#0f0f12',
+  bgPrimary: '#000000',     // pure black
+  bgCard: '#0a0a0a',        // near-black
+  bgCardHover: '#111111',   // hover
+  bgInset: '#060606',       // deeper black
 
-  border: '#27272a',       // zinc-800
-  borderLight: '#3f3f46',  // zinc-700
+  border: '#1a1a1a',        // dark border
+  borderLight: '#333333',   // lighter border
 
-  textPrimary: '#fafafa',  // zinc-50
-  textSecondary: '#a1a1aa', // zinc-400
-  textMuted: '#52525b',    // zinc-600
+  textPrimary: '#cccccc',   // light gray text
+  textSecondary: '#666666', // mid gray
+  textMuted: '#444444',     // muted
 
-  // Legacy aliases
-  brand: '#34d399',
-  blue: '#34d399',
-  purple: '#a1a1aa',
-  orange: '#fbbf24',
-  red: '#f87171',
+  // Legacy aliases for compatibility
+  brand: '#00ff88',
+  blue: '#00ff88',
+  purple: '#666666',
+  orange: '#ffb700',
+  red: '#ff3333',
 } as const;
 
 export const spacing = {
@@ -33,14 +35,14 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  sm: 4, md: 8, lg: 12, xl: 16, pill: 999,
+  sm: 1, md: 2, lg: 2, xl: 2, pill: 2,
 } as const;
 
 export const fontSizes = {
-  xs: 11, sm: 12, md: 13, lg: 15, xl: 20, xxl: 28, hero: 36,
+  xs: 10, sm: 11, md: 12, lg: 13, xl: 16, xxl: 22, hero: 32,
 } as const;
 
 export const fonts = {
   mono: "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
-  body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  body: "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
 } as const;

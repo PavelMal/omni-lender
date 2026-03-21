@@ -7,8 +7,8 @@ interface Borrower {
   totalBorrowed: number; totalRepaid: number; activeLoans: number; defaultRate: string;
 }
 
-const TIERS = ['New', 'Bronze', 'Silver', 'Gold', 'Platinum'];
-const TIER_PCT = [150, 120, 80, 50, 0];
+const TIERS = ['NEW', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM'];
+const TIER_COLORS = [colors.textMuted, '#cd7f32', '#aaa', '#ffd700', colors.accent];
 
 export function BorrowersTab({ lendingStats }: { lendingStats: any }) {
   const [borrowers, setBorrowers] = useState<Borrower[]>([]);
@@ -19,81 +19,152 @@ export function BorrowersTab({ lendingStats }: { lendingStats: any }) {
       .then(d => { if (Array.isArray(d)) setBorrowers(d); }).catch(() => {});
   }, [lendingStats]);
 
-  const c = colors, s = spacing, f = fontSizes, r = radii;
-  const card = { background: c.bgCard, border: `1px solid ${c.border}`, borderRadius: r.md };
+  const c = colors, s = spacing, f = fontSizes;
 
   if (borrowers.length === 0) {
     return (
-      <div style={{ ...card, padding: `${s.xxxl * 2}px`, textAlign: 'center' }}>
-        <div style={{ fontSize: f.sm, color: c.textMuted }}>No borrowers yet</div>
+      <div style={{
+        fontFamily: fonts.mono,
+        border: `1px solid ${c.border}`,
+        borderRadius: radii.sm,
+        background: c.bgCard,
+        padding: `${s.xxxl * 2}px`,
+        textAlign: 'center',
+        color: c.textMuted,
+        fontSize: f.sm,
+      }}>
+        No data
       </div>
     );
   }
 
+  const headers = ['BORROWER', 'SCORE', '', 'TIER', 'BORROWED', 'REPAID', 'ACTIVE', 'DEFAULTS'];
+
   return (
-    <div style={{ ...card, overflow: 'hidden' }}>
+    <div style={{
+      fontFamily: fonts.mono,
+      border: `1px solid ${c.border}`,
+      borderRadius: radii.sm,
+      background: c.bgCard,
+      overflow: 'hidden',
+    }}>
+      {/* Header row */}
+      <div style={{
+        padding: `${s.sm}px ${s.md}px`,
+        borderBottom: `1px solid ${c.border}`,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em' }}>
+          BORROWER REGISTRY
+        </span>
+        <span style={{ fontSize: 9, color: c.textMuted }}>
+          [{borrowers.length}]
+        </span>
+      </div>
+
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            {['BORROWER', 'SCORE', 'TIER', 'COLLATERAL', 'BORROWED', 'REPAID', 'ACTIVE', 'DEFAULTS'].map(h => (
-              <th key={h} style={{
-                textAlign: 'left', padding: `${s.md}px ${s.lg}px`,
+            {headers.map((h, i) => (
+              <th key={i} style={{
+                textAlign: 'left',
+                padding: `${s.sm}px ${s.md}px`,
                 borderBottom: `1px solid ${c.border}`,
-                fontSize: 10, fontWeight: 600, color: c.textMuted,
-                letterSpacing: '0.08em', fontFamily: fonts.mono,
-              }}>{h}</th>
+                fontSize: 9, fontWeight: 600, color: c.textMuted,
+                letterSpacing: '0.1em',
+                ...(h === '' ? { width: 70, padding: `${s.sm}px 0` } : {}),
+              }}>
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {borrowers.map((b, i) => {
-            const short = b.address ? `${b.address.slice(0, 6)}...${b.address.slice(-4)}` : '—';
+            const short = b.address ? `${b.address.slice(0, 6)}...${b.address.slice(-4)}` : '\u2014';
             const tier = b.trustTier;
-            const tierName = TIERS[tier] ?? 'New';
-            const pct = TIER_PCT[tier] ?? 150;
-            const scoreColor = b.creditScore >= 80 ? c.success : b.creditScore >= 50 ? c.textPrimary : c.danger;
-
-            // Score bar width
-            const barW = `${b.creditScore}%`;
+            const tierName = TIERS[tier] ?? 'NEW';
+            const tierColor = TIER_COLORS[tier] ?? c.textMuted;
+            const scoreColor = b.creditScore >= 80 ? c.accent : b.creditScore >= 50 ? c.warning : c.danger;
+            const barW = `${Math.min(b.creditScore, 100)}%`;
 
             return (
-              <tr key={b.address || i} style={{ borderBottom: i < borrowers.length - 1 ? `1px solid ${c.border}` : 'none' }}>
-                <td style={{ padding: `${s.md}px ${s.lg}px` }}>
-                  <span style={{ fontSize: f.sm, fontFamily: fonts.mono, color: c.textPrimary }}>{short}</span>
+              <tr key={b.address || i} style={{
+                borderBottom: i < borrowers.length - 1 ? `1px solid ${c.border}` : 'none',
+              }}>
+                {/* Address */}
+                <td style={{ padding: `${s.sm}px ${s.md}px` }}>
+                  <span style={{ fontSize: f.xs, color: c.textPrimary }}>{short}</span>
                 </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: s.sm }}>
-                    <div style={{ width: 60, height: 4, background: c.bgInset, borderRadius: r.pill, overflow: 'hidden' }}>
-                      <div style={{ width: barW, height: '100%', background: scoreColor, borderRadius: r.pill, transition: 'width 0.3s' }} />
-                    </div>
-                    <span style={{ fontSize: f.sm, fontFamily: fonts.mono, fontWeight: 600, color: scoreColor, minWidth: 24 }}>
-                      {b.creditScore}
-                    </span>
+
+                {/* Score number */}
+                <td style={{ padding: `${s.sm}px ${s.md}px`, width: 36 }}>
+                  <span style={{
+                    fontSize: f.xs, fontWeight: 700, color: scoreColor,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {b.creditScore}
+                  </span>
+                </td>
+
+                {/* Score bar */}
+                <td style={{ padding: `${s.sm}px 0`, width: 70 }}>
+                  <div style={{
+                    width: 60, height: 3,
+                    background: c.border,
+                    borderRadius: 0, overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      width: barW, height: '100%',
+                      background: scoreColor,
+                      transition: 'width 0.3s',
+                      boxShadow: `0 0 4px ${scoreColor}44`,
+                    }} />
                   </div>
                 </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px` }}>
+
+                {/* Tier */}
+                <td style={{ padding: `${s.sm}px ${s.md}px` }}>
                   <span style={{
-                    fontSize: f.xs, fontWeight: 500, color: tier === 4 ? c.accent : c.textSecondary,
-                    background: tier === 4 ? `${c.accent}12` : c.bgInset,
-                    padding: '2px 8px', borderRadius: r.pill,
-                    border: `1px solid ${tier === 4 ? `${c.accent}25` : c.border}`,
+                    fontSize: 9, fontWeight: 600,
+                    color: tierColor,
+                    letterSpacing: '0.05em',
                   }}>
                     {tierName}
                   </span>
                 </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, color: c.textSecondary }}>
-                  {pct === 0 ? <span style={{ color: c.accent }}>none</span> : `${pct}%`}
-                </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, color: c.textPrimary }}>
+
+                {/* Borrowed */}
+                <td style={{
+                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                  color: c.textPrimary, fontVariantNumeric: 'tabular-nums',
+                }}>
                   ${b.totalBorrowed.toFixed(2)}
                 </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, color: c.textSecondary }}>
+
+                {/* Repaid */}
+                <td style={{
+                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                  color: c.textSecondary, fontVariantNumeric: 'tabular-nums',
+                }}>
                   ${b.totalRepaid.toFixed(2)}
                 </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, color: b.activeLoans > 0 ? c.warning : c.textMuted }}>
+
+                {/* Active */}
+                <td style={{
+                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: b.activeLoans > 0 ? c.warning : c.textMuted,
+                }}>
                   {b.activeLoans}
                 </td>
-                <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, color: b.defaultRate !== '0%' ? c.danger : c.textMuted }}>
+
+                {/* Defaults */}
+                <td style={{
+                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: b.defaultRate !== '0%' ? c.danger : c.textMuted,
+                }}>
                   {b.defaultRate}
                 </td>
               </tr>

@@ -16,8 +16,7 @@ export function LendingTab() {
     f(); const i = setInterval(f, 5000); return () => clearInterval(i);
   }, []);
 
-  const c = colors, s = spacing, f = fontSizes, r = radii;
-  const card = { background: c.bgCard, border: `1px solid ${c.border}`, borderRadius: r.md };
+  const c = colors, s = spacing, f = fontSizes;
 
   const filtered = filter === 'all' ? loans : loans.filter(l => l.status === filter);
   const counts = {
@@ -27,47 +26,69 @@ export function LendingTab() {
     overdue: loans.filter(l => l.status === 'overdue').length,
   };
 
-  const filters: { key: Filter; label: string }[] = [
-    { key: 'all', label: `All (${counts.all})` },
-    { key: 'active', label: `Active (${counts.active})` },
-    { key: 'repaid', label: `Repaid (${counts.repaid})` },
-    { key: 'overdue', label: `Overdue (${counts.overdue})` },
+  const filters: { key: Filter; label: string; count: number; color: string }[] = [
+    { key: 'all', label: 'ALL', count: counts.all, color: c.textPrimary },
+    { key: 'active', label: 'ACTIVE', count: counts.active, color: c.accent },
+    { key: 'repaid', label: 'REPAID', count: counts.repaid, color: c.textSecondary },
+    { key: 'overdue', label: 'OVERDUE', count: counts.overdue, color: c.danger },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: s.md }}>
-      <div style={{ display: 'flex', gap: s.xs }}>
-        {filters.map(fl => (
-          <button
-            key={fl.key}
-            onClick={() => setFilter(fl.key)}
-            style={{
-              padding: `${s.xs}px ${s.md}px`,
-              background: filter === fl.key ? c.bgCardHover : 'transparent',
-              border: `1px solid ${filter === fl.key ? c.borderLight : c.border}`,
-              borderRadius: r.sm, fontSize: f.xs, fontWeight: 500,
-              color: filter === fl.key ? c.textPrimary : c.textMuted,
-              cursor: 'pointer', fontFamily: fonts.body, transition: 'all 0.15s',
-            }}
-          >{fl.label}</button>
-        ))}
+    <div style={{ fontFamily: fonts.mono, display: 'flex', flexDirection: 'column', gap: s.md }}>
+
+      {/* Filter pills */}
+      <div style={{ display: 'flex', gap: 1, background: c.border }}>
+        {filters.map(fl => {
+          const isActive = filter === fl.key;
+          return (
+            <button
+              key={fl.key}
+              onClick={() => setFilter(fl.key)}
+              style={{
+                flex: 1,
+                padding: `${s.sm}px ${s.md}px`,
+                background: isActive ? c.bgCardHover : c.bgCard,
+                border: 'none',
+                fontSize: 9, fontWeight: 600,
+                color: isActive ? fl.color : c.textMuted,
+                cursor: 'pointer',
+                fontFamily: fonts.mono,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                transition: 'all 0.1s',
+                borderBottom: isActive ? `2px solid ${fl.color}` : '2px solid transparent',
+              }}
+            >
+              {fl.label} [{fl.count}]
+            </button>
+          );
+        })}
       </div>
 
+      {/* Table */}
       {filtered.length === 0 ? (
-        <div style={{ ...card, padding: `${s.xxxl}px`, textAlign: 'center', color: c.textMuted, fontSize: f.sm }}>
-          {filter === 'all' ? 'No loans issued yet' : `No ${filter} loans`}
+        <div style={{
+          border: `1px solid ${c.border}`, borderRadius: radii.sm,
+          background: c.bgCard,
+          padding: `${s.xxxl}px`, textAlign: 'center',
+          color: c.textMuted, fontSize: f.sm,
+        }}>
+          {filter === 'all' ? 'No data' : `No ${filter} loans`}
         </div>
       ) : (
-        <div style={{ ...card, overflow: 'hidden' }}>
+        <div style={{
+          border: `1px solid ${c.border}`, borderRadius: radii.sm,
+          background: c.bgCard, overflow: 'hidden',
+        }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['BORROWER', 'AMOUNT', 'INTEREST', 'DUE', 'STATUS', 'COLLATERAL'].map(h => (
+                {['BORROWER', 'PRINCIPAL', 'INTEREST', 'DUE DATE', 'STATUS', 'COLLATERAL'].map(h => (
                   <th key={h} style={{
-                    textAlign: 'left', padding: `${s.md}px ${s.lg}px`,
+                    textAlign: 'left', padding: `${s.sm}px ${s.md}px`,
                     borderBottom: `1px solid ${c.border}`,
-                    fontSize: 10, fontWeight: 600, color: c.textMuted,
-                    letterSpacing: '0.08em', fontFamily: fonts.mono,
+                    fontSize: 9, fontWeight: 600, color: c.textMuted,
+                    letterSpacing: '0.1em',
                   }}>{h}</th>
                 ))}
               </tr>
@@ -78,36 +99,55 @@ export function LendingTab() {
                   : loan.status === 'repaid' ? c.textMuted : c.danger;
                 const dueDate = new Date(loan.dueDate);
                 const interest = loan.totalDue - loan.principal;
-                const borrower = loan.borrowerName || (loan.borrowerAddress ? `${loan.borrowerAddress.slice(0, 6)}...${loan.borrowerAddress.slice(-4)}` : '—');
+                const borrower = loan.borrowerName || (loan.borrowerAddress ? `${loan.borrowerAddress.slice(0, 6)}...${loan.borrowerAddress.slice(-4)}` : '\u2014');
+                const now = new Date();
+                const isOverdue = loan.status === 'active' && dueDate < now;
 
                 return (
-                  <tr key={loan.id || i} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : 'none' }}>
-                    <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, color: c.textPrimary }}>
+                  <tr key={loan.id || i} style={{
+                    borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : 'none',
+                  }}>
+                    <td style={{ padding: `${s.sm}px ${s.md}px`, fontSize: f.xs, color: c.textPrimary }}>
                       {borrower}
                     </td>
-                    <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, fontWeight: 600, color: c.textPrimary }}>
+                    <td style={{
+                      padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                      fontWeight: 600, color: c.textPrimary,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
                       ${loan.principal.toFixed(2)}
                     </td>
-                    <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.sm, fontFamily: fonts.mono, color: interest > 0 ? c.accent : c.textMuted }}>
-                      {interest > 0 ? `+$${interest.toFixed(2)}` : '—'}
+                    <td style={{
+                      padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                      color: interest > 0 ? c.accent : c.textMuted,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                      {interest > 0 ? `+$${interest.toFixed(2)}` : '\u2014'}
                     </td>
-                    <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.xs, color: c.textSecondary }}>
-                      {dueDate.toLocaleDateString()}
+                    <td style={{
+                      padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                      color: isOverdue ? c.danger : c.textSecondary,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                      {dueDate.toLocaleDateString([], { month: '2-digit', day: '2-digit', year: '2-digit' })}
                     </td>
-                    <td style={{ padding: `${s.md}px ${s.lg}px` }}>
+                    <td style={{ padding: `${s.sm}px ${s.md}px` }}>
                       <span style={{
-                        fontSize: 10, fontWeight: 600, color: statusColor,
-                        background: `${statusColor}12`, padding: '2px 8px',
-                        borderRadius: r.pill, textTransform: 'uppercase',
+                        fontSize: 9, fontWeight: 700,
+                        color: statusColor,
+                        textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                       }}>
                         {loan.status}
                       </span>
                     </td>
-                    <td style={{ padding: `${s.md}px ${s.lg}px`, fontSize: f.xs, fontFamily: fonts.mono, color: c.textSecondary }}>
+                    <td style={{
+                      padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
+                      color: c.textSecondary, fontVariantNumeric: 'tabular-nums',
+                    }}>
                       {loan.collateralAmountEth
-                        ? `${loan.collateralAmountEth} ETH ($${loan.collateralValueUsd?.toFixed(2) ?? '?'})`
-                        : '—'}
+                        ? `${loan.collateralAmountEth} ETH`
+                        : '\u2014'}
                     </td>
                   </tr>
                 );
