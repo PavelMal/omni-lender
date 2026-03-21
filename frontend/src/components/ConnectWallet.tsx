@@ -1,90 +1,49 @@
-import { useAccount, useConnect, useDisconnect, useBalance, useReadContract } from 'wagmi';
-import { formatUnits } from 'viem';
-import { sepolia } from 'wagmi/chains';
-import { USDT_CONTRACT, USDT_ABI, USDT_DECIMALS } from '../wagmi';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { colors, spacing, radii, fontSizes, fonts } from '../styles/tokens';
 
-const SEPOLIA_HEX = `0x${sepolia.id.toString(16)}`;
+const SEPOLIA_HEX = '0xaa36a7';
 
 async function ensureSepolia(): Promise<boolean> {
   const eth = (window as any).ethereum;
   if (!eth) return false;
-
-  const sepoliaParams = {
-    chainId: SEPOLIA_HEX,
-    chainName: 'Sepolia Testnet',
-    nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
-    blockExplorerUrls: ['https://sepolia.etherscan.io'],
-  };
-
   try {
-    await eth.request({
-      method: 'wallet_addEthereumChain',
-      params: [sepoliaParams],
-    });
-  } catch {
-    // Built-in chain — fine
-  }
-
+    await eth.request({ method: 'wallet_addEthereumChain', params: [{ chainId: SEPOLIA_HEX, chainName: 'Sepolia Testnet', nativeCurrency: { name: 'SepoliaETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'], blockExplorerUrls: ['https://sepolia.etherscan.io'] }] });
+  } catch {}
   try {
-    await eth.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: SEPOLIA_HEX }],
-    });
+    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: SEPOLIA_HEX }] });
     return true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
-
-const pill: React.CSSProperties = {
-  padding: '6px 12px',
-  borderRadius: 8,
-  border: '1px solid #333',
-  background: '#111118',
-  color: '#ccc',
-  fontSize: 13,
-  fontWeight: 600,
-};
 
 export function ConnectWallet() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  const { data: ethBalance } = useBalance({ address });
-  const { data: usdtRaw } = useReadContract({
-    address: USDT_CONTRACT,
-    abi: USDT_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-  });
-
-  const ethStr = ethBalance ? Number(ethBalance.formatted).toFixed(4) : '0';
-  const usdtStr = usdtRaw != null ? Number(formatUnits(usdtRaw as bigint, USDT_DECIMALS)).toFixed(2) : '0';
 
   if (isConnected && address) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={pill}>
-          {ethStr} ETH
-        </span>
-        <span style={{ ...pill, color: '#00d4aa', borderColor: '#00d4aa44' }}>
-          {usdtStr} USDT
-        </span>
-        <span style={pill}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+        <span style={{
+          padding: `${spacing.xs}px ${spacing.md}px`,
+          borderRadius: radii.sm,
+          border: `1px solid ${colors.border}`,
+          background: colors.bgCard,
+          color: colors.textSecondary,
+          fontSize: fontSizes.xs,
+          fontFamily: fonts.mono,
+        }}>
           {address.slice(0, 6)}...{address.slice(-4)}
         </span>
         <button
           onClick={() => disconnect()}
           style={{
-            padding: '6px 10px',
-            borderRadius: 8,
-            border: '1px solid #ff444466',
+            padding: `${spacing.xs}px ${spacing.sm}px`,
+            borderRadius: radii.sm,
+            border: `1px solid ${colors.border}`,
             background: 'transparent',
-            color: '#ff6666',
+            color: colors.textMuted,
             cursor: 'pointer',
-            fontSize: 12,
-            fontWeight: 600,
+            fontSize: fontSizes.xs,
           }}
         >
           Disconnect
@@ -101,17 +60,17 @@ export function ConnectWallet() {
         if (metamask) connect({ connector: metamask });
       }}
       style={{
-        padding: '10px 24px',
-        borderRadius: 10,
+        padding: `${spacing.sm}px ${spacing.xl}px`,
+        borderRadius: radii.sm,
         border: 'none',
-        background: '#00d4aa',
+        background: colors.accent,
         color: '#000',
         cursor: 'pointer',
-        fontSize: 15,
+        fontSize: fontSizes.md,
         fontWeight: 700,
       }}
     >
-      Connect MetaMask
+      Connect Wallet
     </button>
   );
 }

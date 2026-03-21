@@ -1,358 +1,187 @@
 import { useState, useEffect } from 'react';
+import { useWriteContract, useAccount } from 'wagmi';
 import { AgentStatus } from '../hooks/useAgent';
 import { API_BASE } from '../api';
-import { colors, spacing, radii, fontSizes } from '../styles/tokens';
-import { cardStyle, badgeStyle } from '../styles/common';
-import StatCard from '../components/ui/StatCard';
+import { USDT_CONTRACT, USDT_ABI } from '../wagmi';
+import { colors, spacing, radii, fontSizes, fonts } from '../styles/tokens';
 
 interface Props {
-  status: AgentStatus;
+  status: AgentStatus | null;
   ownerAddress: string;
-  onShowAudit: () => void;
   lendingStats: any;
+  onShowAudit?: () => void;
 }
 
-const budgetColors: Record<string, string> = {
-  defi: colors.blue,
-  lending: colors.purple,
-  tipping: colors.orange,
-  reserve: colors.brand,
-};
+const LK = ['loan', 'negotiation', 'collateral', 'interest', 'liquidat', 'repay', 'credit'];
+function isLending(e: any): boolean {
+  const a = (e.action ?? '').toLowerCase();
+  return (LK.some(k => a.includes(k)) || e.module === 'lending') && a !== 'wallet_initialized' && a !== 'budgets_allocated';
+}
 
-const budgetLabels: Record<string, string> = {
-  defi: 'DeFi',
-  lending: 'Lending',
-  tipping: 'Tipping',
-  reserve: 'Treasury',
-};
+const TIERS = ['New', 'Bronze', 'Silver', 'Gold', 'Platinum'];
+const TIER_PCT = [150, 120, 80, 50, 0];
 
-const budgetTargets: Record<string, number> = {
-  defi: 60,
-  lending: 20,
-  tipping: 10,
-  reserve: 10,
-};
-
-const holdingColors: Record<string, string> = {
-  USDT: '#00d4aa',
-  WETH: '#627eea',
-  WBTC: '#f7931a',
-};
-
-export function OverviewTab({ status, ownerAddress, onShowAudit, lendingStats }: Props) {
-  const [recentAudit, setRecentAudit] = useState<any[]>([]);
+export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }: Props) {
+  const [events, setEvents] = useState<any[]>([]);
+  const [revoking, setRevoking] = useState(false);
+  const { writeContract } = useWriteContract();
 
   useEffect(() => {
-    const fetchAudit = () => {
-      fetch(`${API_BASE}/api/agent/audit/${ownerAddress}?limit=5`)
-        .then(r => r.ok ? r.json() : [])
-        .then(data => setRecentAudit(Array.isArray(data) ? data.slice(-5).reverse() : []))
-        .catch(() => {});
-    };
-    fetchAudit();
-    const interval = setInterval(fetchAudit, 8000);
-    return () => clearInterval(interval);
+    const f = () => fetch(`${API_BASE}/api/agent/audit/${ownerAddress}?limit=30`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setEvents((Array.isArray(d) ? d : []).filter(isLending).slice(-6).reverse()))
+      .catch(() => {});
+    f(); const i = setInterval(f, 6000); return () => clearInterval(i);
   }, [ownerAddress]);
 
-  const { balance, allowance, holdings, positions, loans, aaveBalance } = status;
+  const c = colors, s = spacing, f = fontSizes, r = radii;
+  const bal = status?.balance?.usdt ?? 0;
+  const allowance = status?.allowance ?? 0;
+  const loans = status?.loans ?? [];
+  const active = loans.filter(l => l.status === 'active').length;
+  const lent = lendingStats?.totalLent ?? 0;
+  const profit = lendingStats?.totalInterestEarned ?? 0;
+  const totalLoans = lendingStats?.totalLoans ?? loans.length;
+  const overdue = lendingStats?.overdueLoans ?? 0;
 
-  const totalPortfolio = Object.values(holdings).reduce((s, v) => s + v, 0) + (aaveBalance ?? 0);
-  const activeLoans = loans.filter(l => l.status === 'active').length;
-  const lendingProfit = lendingStats?.totalInterestEarned ?? 0;
+  const card = { background: c.bgCard, border: `1px solid ${c.border}`, borderRadius: r.md };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl }}>
-      {/* Stat cards row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: spacing.md,
-      }}>
-        <StatCard
-          label="USDT Balance"
-          value={`$${balance.usdt.toFixed(2)}`}
-          color={colors.brand}
-          tooltip="Available USDT in your wallet"
-        />
-        <StatCard
-          label="Delegated Allowance"
-          value={`$${(allowance ?? 0).toFixed(2)}`}
-          color={colors.purple}
-          tooltip="Amount the agent is authorized to manage"
-        />
-        <StatCard
-          label="Total Portfolio"
-          value={`$${totalPortfolio.toFixed(2)}`}
-          color={colors.blue}
-          tooltip="Combined value of all holdings and positions"
-        />
-        <StatCard
-          label="DeFi Positions"
-          value={String(positions.length)}
-          color={colors.blue}
-          subtitle={positions.length > 0 ? 'Active' : 'None'}
-        />
-        <StatCard
-          label="Active Loans"
-          value={String(activeLoans)}
-          color={colors.orange}
-          subtitle={`${loans.length} total`}
-        />
-        {lendingStats && lendingStats.totalLoans > 0 && (
-          <StatCard
-            label="Lending Profit"
-            value={`+$${lendingProfit.toFixed(2)}`}
-            color={colors.brand}
-            subtitle={`${lendingStats.totalLoans} loan${lendingStats.totalLoans === 1 ? '' : 's'} issued`}
-          />
-        )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: s.lg }}>
+
+      {/* ── Metrics grid ────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: s.sm }}>
+        {/* DELEGATED — with revoke */}
+        <div style={{ ...card, padding: `${s.lg}px ${s.md}px` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: s.sm }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: c.textMuted, letterSpacing: '0.08em', fontFamily: fonts.mono }}>DELEGATED</span>
+            {allowance > 0 && (
+              <button
+                onClick={() => {
+                  if (!confirm('Revoke all delegated USDT from the bot?')) return;
+                  setRevoking(true);
+                  const opAddr = status?.operatorAddress;
+                  if (!opAddr) { setRevoking(false); return; }
+                  writeContract({
+                    address: USDT_CONTRACT,
+                    abi: USDT_ABI,
+                    functionName: 'approve',
+                    args: [opAddr as `0x${string}`, BigInt(0)],
+                  }, {
+                    onSuccess: () => { setRevoking(false); window.location.reload(); },
+                    onError: () => { setRevoking(false); },
+                  });
+                }}
+                style={{
+                  fontSize: 9, fontWeight: 600, color: c.danger, background: `${c.danger}12`,
+                  border: `1px solid ${c.danger}25`, borderRadius: r.sm,
+                  padding: '1px 6px', cursor: 'pointer',
+                }}
+              >
+                {revoking ? '...' : 'Revoke'}
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 700, fontFamily: fonts.mono, lineHeight: 1, color: c.textPrimary }}>
+            ${allowance.toFixed(0)}
+          </div>
+        </div>
+
+        {/* Other metrics */}
+        {[
+          { label: 'TOTAL LENT', val: `$${lent.toFixed(2)}` },
+          { label: 'LOANS', val: `${active} active`, sub: `${totalLoans} total` },
+          { label: 'OVERDUE', val: String(overdue), warn: overdue > 0 },
+          { label: 'PROFIT', val: `+$${profit.toFixed(2)}`, accent: profit > 0 },
+        ].map((m, i) => (
+          <div key={i} style={{ ...card, padding: `${s.lg}px ${s.md}px` }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: c.textMuted, letterSpacing: '0.08em', marginBottom: s.sm, fontFamily: fonts.mono }}>
+              {m.label}
+            </div>
+            <div style={{
+              fontSize: 24, fontWeight: 700, fontFamily: fonts.mono, lineHeight: 1,
+              color: (m as any).warn ? c.danger : (m as any).accent ? c.accent : c.textPrimary,
+            }}>
+              {m.val}
+            </div>
+            {(m as any).sub && <div style={{ fontSize: f.xs, color: c.textMuted, marginTop: 4 }}>{(m as any).sub}</div>}
+          </div>
+        ))}
       </div>
 
-      {/* Budget Allocation */}
-      <div style={cardStyle()}>
-        <h3 style={{
-          fontSize: fontSizes.lg,
-          fontWeight: 700,
-          color: colors.textPrimary,
-          marginBottom: spacing.lg,
-        }}>
-          Budget Allocation
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-          {Object.entries(status.budgets).map(([name, b]) => {
-            const pct = b.allocated > 0 ? (b.spent / b.allocated) * 100 : 0;
-            const target = budgetTargets[name] ?? 0;
-            const color = budgetColors[name] ?? colors.textMuted;
+      {/* ── Two-column: Trust tiers + Recent ────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: s.md, alignItems: 'start' }}>
+
+        {/* Trust tiers */}
+        <div style={{ ...card, overflow: 'hidden' }}>
+          <div style={{ padding: `${s.sm}px ${s.md}px`, borderBottom: `1px solid ${c.border}`, display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: c.textMuted, letterSpacing: '0.08em', fontFamily: fonts.mono }}>TRUST TIERS</span>
+            <span style={{ fontSize: 10, color: c.textMuted }}>collateral required</span>
+          </div>
+          {TIERS.map((name, i) => (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: `${s.sm}px ${s.md}px`,
+              borderBottom: i < 4 ? `1px solid ${c.border}` : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: s.sm }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: r.sm,
+                  background: i === 4 ? `${c.accent}15` : c.bgInset,
+                  border: `1px solid ${i === 4 ? `${c.accent}33` : c.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 9, fontWeight: 700, color: i === 4 ? c.accent : c.textMuted, fontFamily: fonts.mono,
+                }}>
+                  {i}
+                </div>
+                <span style={{ fontSize: f.sm, color: i === 4 ? c.accent : c.textPrimary, fontWeight: 500 }}>{name}</span>
+              </div>
+              <span style={{
+                fontSize: f.sm, fontFamily: fonts.mono, fontWeight: 600,
+                color: TIER_PCT[i] === 0 ? c.accent : c.textSecondary,
+              }}>
+                {TIER_PCT[i] === 0 ? 'no collateral' : `${TIER_PCT[i]}% ETH`}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent activity */}
+        <div style={{ ...card, overflow: 'hidden' }}>
+          <div style={{ padding: `${s.sm}px ${s.md}px`, borderBottom: `1px solid ${c.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: c.textMuted, letterSpacing: '0.08em', fontFamily: fonts.mono }}>RECENT DECISIONS</span>
+            <span style={{ fontSize: f.xs, color: c.textMuted }}>{events.length}</span>
+          </div>
+
+          {events.length === 0 ? (
+            <div style={{ padding: `${s.xxl}px ${s.md}px`, textAlign: 'center', color: c.textMuted, fontSize: f.sm }}>
+              No activity yet
+            </div>
+          ) : events.map((e, i) => {
+            const action = (e.action ?? '').replace(/_/g, ' ');
+            const a = action.toLowerCase();
+            const dot = a.includes('rejected') || a.includes('overdue') ? c.danger
+              : a.includes('approved') || a.includes('repaid') ? c.success
+              : a.includes('negotiation') ? c.accent : c.textMuted;
 
             return (
-              <div key={name}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: fontSizes.md,
-                  marginBottom: spacing.xs,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    <div style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: radii.sm,
-                      background: color,
-                    }} />
-                    <span style={{ fontWeight: 600, color: colors.textPrimary }}>
-                      {budgetLabels[name] ?? name}
-                    </span>
-                    <span style={{
-                      fontSize: fontSizes.xs,
-                      color: colors.textMuted,
-                      fontWeight: 500,
-                    }}>
-                      {target}%
-                    </span>
-                  </div>
-                  <span style={{ color: colors.textSecondary, fontSize: fontSizes.sm }}>
-                    ${b.spent.toFixed(2)} / ${b.allocated.toFixed(2)}
-                  </span>
-                </div>
-                <div style={{
-                  height: 6,
-                  background: colors.bgInset,
-                  borderRadius: radii.pill,
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${Math.min(pct, 100)}%`,
-                    background: pct > 90 ? colors.red : color,
-                    borderRadius: radii.pill,
-                    transition: 'width 0.4s ease',
-                  }} />
-                </div>
+              <div key={`${e.timestamp}-${i}`} style={{
+                display: 'flex', alignItems: 'center', gap: s.sm,
+                padding: `${s.sm}px ${s.md}px`,
+                borderBottom: i < events.length - 1 ? `1px solid ${c.border}` : 'none',
+              }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+                <span style={{ fontSize: f.sm, color: c.textPrimary, fontWeight: 500, flex: 1 }}>{action}</span>
+                {e.amount != null && (
+                  <span style={{ fontSize: f.xs, color: c.textSecondary, fontFamily: fonts.mono }}>${e.amount}</span>
+                )}
+                <span style={{ fontSize: 10, color: c.textMuted, fontFamily: fonts.mono }}>
+                  {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
             );
           })}
         </div>
-      </div>
-
-      {/* Portfolio Holdings */}
-      {Object.values(holdings).some(v => v > 0) && (
-        <div style={cardStyle()}>
-          <h3 style={{
-            fontSize: fontSizes.lg,
-            fontWeight: 700,
-            color: colors.textPrimary,
-            marginBottom: spacing.lg,
-          }}>
-            Portfolio Holdings
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-            {(() => {
-              const total = Object.values(holdings).reduce((s, v) => s + v, 0);
-              const entries = Object.entries(holdings).filter(([, val]) => val > 0);
-
-              return entries.map(([asset, val]) => {
-                const pct = total > 0 ? (val / total) * 100 : 0;
-                const color = holdingColors[asset] ?? colors.textMuted;
-
-                return (
-                  <div key={asset}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: spacing.xs,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                        <div style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: radii.sm,
-                          background: `${color}18`,
-                          border: `1px solid ${color}44`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: fontSizes.xs,
-                          fontWeight: 800,
-                          color,
-                        }}>
-                          {asset[0]}
-                        </div>
-                        <span style={{
-                          fontWeight: 600,
-                          fontSize: fontSizes.md,
-                          color: colors.textPrimary,
-                        }}>
-                          {asset}
-                        </span>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{
-                          fontWeight: 700,
-                          fontSize: fontSizes.lg,
-                          color,
-                        }}>
-                          ${val.toFixed(2)}
-                        </span>
-                        <span style={{
-                          marginLeft: spacing.sm,
-                          fontSize: fontSizes.sm,
-                          color: colors.textMuted,
-                        }}>
-                          {pct.toFixed(0)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{
-                      height: 4,
-                      background: colors.bgInset,
-                      borderRadius: radii.pill,
-                      overflow: 'hidden',
-                    }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${pct}%`,
-                        background: color,
-                        borderRadius: radii.pill,
-                        transition: 'width 0.4s ease',
-                      }} />
-                    </div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Activity */}
-      <div style={cardStyle()}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: spacing.lg,
-        }}>
-          <h3 style={{
-            fontSize: fontSizes.lg,
-            fontWeight: 700,
-            color: colors.textPrimary,
-          }}>
-            Recent Activity
-          </h3>
-          <button
-            onClick={onShowAudit}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: colors.blue,
-              fontSize: fontSizes.sm,
-              fontWeight: 600,
-              cursor: 'pointer',
-              padding: `${spacing.xs}px ${spacing.sm}px`,
-            }}
-          >
-            View all
-          </button>
-        </div>
-
-        {recentAudit.length === 0 ? (
-          <p style={{ color: colors.textMuted, fontSize: fontSizes.md }}>
-            No recent activity. The agent will log actions here as it operates.
-          </p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {recentAudit.map((e, i) => {
-              const statusColor =
-                e.status === 'approved' || e.status === 'executed' ? colors.brand :
-                e.status === 'rejected' || e.status === 'failed' ? colors.red :
-                colors.textMuted;
-
-              return (
-                <div key={`${e.timestamp}-${i}`} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm,
-                  padding: `${spacing.sm}px 0`,
-                  borderBottom: i < recentAudit.length - 1 ? `1px solid ${colors.border}` : 'none',
-                }}>
-                  <div style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: radii.pill,
-                    background: statusColor,
-                    flexShrink: 0,
-                  }} />
-                  <span style={{
-                    fontSize: fontSizes.sm,
-                    color: statusColor,
-                    fontWeight: 600,
-                    minWidth: 0,
-                  }}>
-                    {(e.action ?? '').replace(/_/g, ' ')}
-                  </span>
-                  {e.amount !== undefined && (
-                    <span style={{
-                      fontSize: fontSizes.sm,
-                      color: colors.textSecondary,
-                    }}>
-                      ${e.amount} {e.asset ?? 'USDT'}
-                    </span>
-                  )}
-                  <span style={{
-                    fontSize: fontSizes.xs,
-                    color: colors.textMuted,
-                    marginLeft: 'auto',
-                    flexShrink: 0,
-                  }}>
-                    {new Date(e.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
