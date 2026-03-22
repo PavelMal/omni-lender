@@ -1,7 +1,7 @@
 {
-  "name": "omni-agent",
-  "version": "0.1.0",
-  "description": "Autonomous AI economic agent — Treasury, DeFi, Lending, Tipping — powered by Tether WDK + OpenClaw",
+  "name": "omni-lender",
+  "version": "1.0.0",
+  "description": "Autonomous AI lending agent — collateralized loans, LLM negotiation, trust tiers — powered by Tether WDK",
   "type": "module",
   "license": "Apache-2.0",
   "engines": {
