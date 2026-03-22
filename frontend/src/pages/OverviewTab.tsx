@@ -66,7 +66,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
       hasRevoke: allowance > 0,
     },
     { label: 'LOANS ISSUED', value: `$${lent.toFixed(2)}`, sub: `${totalLoans} loans` },
-    { label: 'OUTSTANDING', value: String(active), color: active > 0 ? (overdue > 0 ? c.danger : c.warning) : c.textMuted, sub: overdue > 0 ? `${overdue} overdue` : active > 0 ? 'awaiting repayment' : 'all repaid' },
+    { label: 'ACTIVE LOANS', value: String(active), color: active > 0 ? c.accent : c.textMuted },
     { label: 'EARNED', value: `+$${profit.toFixed(2)}`, color: profit > 0 ? c.accent : c.textMuted, sub: 'from interest' },
   ];
 
