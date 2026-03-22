@@ -80,12 +80,14 @@ export default function App() {
   const { address, isConnected } = useAccount();
   const [agentReady, setAgentReady] = useState(false);
   const [, setOperatorAddress] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
   const [tab, setTab] = useState<Tab>('overview');
   const [lendingStats, setLendingStats] = useState<any>(null);
   const { status } = useAgent(isConnected && agentReady ? address! : '');
 
   useEffect(() => {
-    if (!isConnected || !address) return;
+    if (!isConnected || !address) { setChecking(false); return; }
+    setChecking(true);
     fetch(`${API_BASE}/agent/status/${address}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -94,7 +96,8 @@ export default function App() {
           setAgentReady(true);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setChecking(false));
   }, [isConnected, address]);
 
   useEffect(() => {
@@ -110,6 +113,11 @@ export default function App() {
         <Landing />
       </div>
     );
+  }
+
+  // ── Still checking status ──
+  if (checking) {
+    return <div style={{ minHeight: '100vh', background: '#000' }} />;
   }
 
   // ── Not set up: show setup flow ──

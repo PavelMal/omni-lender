@@ -174,12 +174,36 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
                 width: 280, fontFamily: fonts.mono,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
               }}>
-                <div style={{ fontSize: 9, color: c.textSecondary, lineHeight: 1.8 }}>
-                  <div>Borrowers put up ETH as collateral to get USDT loans.</div>
-                  <div style={{ marginTop: 4 }}>New borrowers must deposit 150% of the loan value.</div>
-                  <div style={{ marginTop: 4 }}>Each repaid loan builds trust — the bot requires less collateral.</div>
-                  <div style={{ marginTop: 4 }}>Trusted borrowers (Tier 4) can borrow with no collateral at all.</div>
-                  <div style={{ marginTop: 4, color: c.danger }}>A single missed payment resets trust to zero.</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9, marginBottom: s.sm }}>
+                  <thead>
+                    <tr>
+                      {['TIER', 'COLLATERAL', 'REQUIRES'].map(h => (
+                        <th key={h} style={{
+                          textAlign: 'left', padding: `3px 4px`,
+                          borderBottom: `1px solid ${c.border}`,
+                          color: c.textMuted, fontWeight: 600,
+                        }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { tier: 'NEW', pct: '150%', req: 'Default' },
+                      { tier: 'BRONZE', pct: '120%', req: '1+ repaid, no missed payments' },
+                      { tier: 'SILVER', pct: '80%', req: '3+ repaid, no missed payments' },
+                      { tier: 'GOLD', pct: '50%', req: '5+ repaid, $100+ total' },
+                      { tier: 'PLATINUM', pct: '0%', req: '10+ repaid, $500+, avg ≥ $25' },
+                    ].map((row, i) => (
+                      <tr key={i}>
+                        <td style={{ padding: '3px 4px', color: c.textSecondary }}>{row.tier}</td>
+                        <td style={{ padding: '3px 4px', color: c.accent }}>{row.pct}</td>
+                        <td style={{ padding: '3px 4px', color: c.textMuted }}>{row.req}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: 9, color: c.danger, marginTop: 2 }}>
+                  Any missed payment → reset to NEW
                 </div>
               </div>
             </>
