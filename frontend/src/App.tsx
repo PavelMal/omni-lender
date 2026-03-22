@@ -137,26 +137,13 @@ export default function App() {
         padding: `${s.md}px 0`,
         borderBottom: `1px solid ${c.border}`,
       }}>
-        {/* Left: branding + inline stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: s.lg }}>
-          <span style={{
-            fontSize: f.lg, fontWeight: 700, color: c.accent,
-            letterSpacing: '-0.02em',
-            textShadow: `0 0 20px ${c.accent}33`,
-          }}>
-            OMNILENDER
-          </span>
-
-          {/* Separator */}
-          <span style={{ color: c.border, fontSize: f.lg }}>|</span>
-
-          {/* Inline pool stats */}
-          <div style={{ display: 'flex', gap: s.lg, fontSize: f.xs, color: c.textMuted }}>
-            <span>POOL <span style={{ color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>${bal.toFixed(2)}</span></span>
-            <span>ACTIVE <span style={{ color: activeCount > 0 ? c.accent : c.textMuted, fontVariantNumeric: 'tabular-nums' }}>{activeCount}</span></span>
-            <span>RATE <span style={{ color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>{((lendingStats?.dynamicRate ?? 0) * 100).toFixed(1)}%</span></span>
-          </div>
-        </div>
+        <span style={{
+          fontSize: f.lg, fontWeight: 700, color: c.accent,
+          letterSpacing: '-0.02em',
+          textShadow: `0 0 20px ${c.accent}33`,
+        }}>
+          OMNILENDER
+        </span>
 
         {/* Right: wallet */}
         <ConnectWallet />

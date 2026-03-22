@@ -24,8 +24,18 @@ const TIER_COLORS = [colors.textMuted, '#cd7f32', '#aaa', '#ffd700', colors.acce
 
 export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }: Props) {
   const [events, setEvents] = useState<any[]>([]);
+  const [allLoans, setAllLoans] = useState<any[]>([]);
   const [revoking, setRevoking] = useState(false);
   const { writeContract } = useWriteContract();
+
+  // Fetch all loans
+  useEffect(() => {
+    const f = () => fetch(`${API_BASE}/api/agent/all-loans`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { if (Array.isArray(d)) setAllLoans(d); })
+      .catch(() => {});
+    f(); const i = setInterval(f, 8000); return () => clearInterval(i);
+  }, []);
 
   useEffect(() => {
     const f = () => fetch(`${API_BASE}/api/agent/audit/${ownerAddress}?limit=30`)
@@ -43,7 +53,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
   const profit = lendingStats?.totalInterestEarned ?? 0;
   const totalLoans = lendingStats?.totalLoans ?? loans.length;
   const overdue = lendingStats?.overdueLoans ?? 0;
-  const rate = lendingStats?.dynamicRate ?? 0;
+  const rate = lendingStats?.dynamicRate?.rate ?? 0;
 
   const metrics = [
     {
@@ -52,17 +62,16 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
       color: c.textPrimary,
       hasRevoke: allowance > 0,
     },
-    { label: 'TOTAL LENT', value: `$${lent.toFixed(2)}`, color: c.textPrimary },
-    { label: 'ACTIVE / TOTAL', value: `${active}/${totalLoans}`, color: c.textPrimary },
-    { label: 'OVERDUE', value: String(overdue), color: overdue > 0 ? c.danger : c.textMuted },
-    { label: 'PROFIT', value: `+$${profit.toFixed(2)}`, color: profit > 0 ? c.accent : c.textMuted },
+    { label: 'LOANS ISSUED', value: `$${lent.toFixed(2)}`, sub: `${totalLoans} loans` },
+    { label: 'OUTSTANDING', value: String(active), color: active > 0 ? (overdue > 0 ? c.danger : c.warning) : c.textMuted, sub: overdue > 0 ? `${overdue} overdue` : active > 0 ? 'awaiting repayment' : 'all repaid' },
+    { label: 'EARNED', value: `+$${profit.toFixed(2)}`, color: profit > 0 ? c.accent : c.textMuted, sub: 'from interest' },
   ];
 
   return (
     <div style={{ fontFamily: fonts.mono, display: 'flex', flexDirection: 'column', gap: s.md }}>
 
       {/* ── Metrics row ──────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1, background: c.border }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: c.border }}>
         {metrics.map((m, i) => (
           <div key={i} style={{
             background: c.bgCard,
@@ -112,11 +121,14 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
             </div>
             <div style={{
               fontSize: 20, fontWeight: 700, lineHeight: 1,
-              color: m.color,
+              color: m.color ?? c.textPrimary,
               fontVariantNumeric: 'tabular-nums',
             }}>
               {m.value}
             </div>
+            {(m as any).sub && (
+              <div style={{ fontSize: 9, color: c.textMuted, marginTop: 4 }}>{(m as any).sub}</div>
+            )}
           </div>
         ))}
       </div>
@@ -193,7 +205,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
               display: 'flex', justifyContent: 'space-between',
             }}>
               <span style={{ fontSize: 9, color: c.textMuted, letterSpacing: '0.1em' }}>BASE RATE</span>
-              <span style={{ fontSize: f.xs, color: c.accent, fontWeight: 600 }}>{(rate * 100).toFixed(1)}%</span>
+              <span style={{ fontSize: f.xs, color: c.accent, fontWeight: 600 }}>{rate.toFixed(1)}%</span>
             </div>
           )}
         </div>
@@ -289,6 +301,66 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
             </>
           )}
         </div>
+      </div>
+
+      {/* ── Recent Loans ──────────────────────────────────────────── */}
+      <div style={{
+        border: `1px solid ${c.border}`, borderRadius: radii.sm,
+        background: c.bgCard, overflow: 'hidden',
+      }}>
+        <div style={{
+          padding: `${s.sm}px ${s.md}px`, borderBottom: `1px solid ${c.border}`,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em' }}>RECENT LOANS</span>
+          <span style={{ fontSize: 9, color: c.textMuted }}>[{allLoans.length}]</span>
+        </div>
+
+        {allLoans.length === 0 ? (
+          <div style={{ padding: `${s.lg}px ${s.md}px`, color: c.textMuted, fontSize: f.xs }}>—</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['BORROWER', 'AMOUNT', 'INTEREST', 'STATUS', 'TX'].map(h => (
+                  <th key={h} style={{
+                    textAlign: 'left', padding: `${s.xs}px ${s.md}px`,
+                    borderBottom: `1px solid ${c.border}`,
+                    fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allLoans.slice(-6).reverse().map((l: any, i: number) => {
+                const sc = l.status === 'active' ? c.accent : l.status === 'repaid' ? c.textMuted : c.danger;
+                const interest = (l.totalDue ?? 0) - (l.principal ?? 0);
+                return (
+                  <tr key={l.id || i} style={{ borderBottom: i < Math.min(allLoans.length, 6) - 1 ? `1px solid ${c.border}` : 'none' }}>
+                    <td style={{ padding: `${s.xs}px ${s.md}px`, fontSize: f.xs, color: c.textPrimary }}>
+                      {l.borrowerName?.slice(0, 20) || '—'}
+                    </td>
+                    <td style={{ padding: `${s.xs}px ${s.md}px`, fontSize: f.xs, color: c.textPrimary, fontVariantNumeric: 'tabular-nums' }}>
+                      ${l.principal?.toFixed(2)}
+                    </td>
+                    <td style={{ padding: `${s.xs}px ${s.md}px`, fontSize: f.xs, color: interest > 0 ? c.accent : c.textMuted, fontVariantNumeric: 'tabular-nums' }}>
+                      {interest > 0 ? `+$${interest.toFixed(2)}` : '—'}
+                    </td>
+                    <td style={{ padding: `${s.xs}px ${s.md}px`, fontSize: 9, fontWeight: 600, color: sc, letterSpacing: '0.05em' }}>
+                      {l.status?.toUpperCase()}
+                    </td>
+                    <td style={{ padding: `${s.xs}px ${s.md}px`, fontSize: f.xs }}>
+                      {l.txHash && l.txHash.startsWith('0x') && l.txHash.length > 20 ? (
+                        <a href={`https://sepolia.etherscan.io/tx/${l.txHash}`} target="_blank" rel="noopener noreferrer"
+                          style={{ color: c.accent, textDecoration: 'none' }}>{l.txHash.slice(0, 6)}...{l.txHash.slice(-4)}</a>
+                      ) : <span style={{ color: c.textMuted }}>—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
