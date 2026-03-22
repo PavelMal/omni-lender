@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniLender — Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: #000;
+    color: #ccc;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Scanline */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.008) 2px, rgba(0,255,136,0.008) 4px);
+  }
+
+  .slide {
+    display: none;
+    height: 100vh;
+    padding: 60px 80px;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+  }
+  .slide.active { display: flex; }
+
+  .g { color: #00ff88; }
+  .r { color: #ff3333; }
+  .y { color: #ffb700; }
+  .dim { color: #444; }
+  .mid { color: #666; }
+
+  h1 { font-size: 42px; font-weight: 700; line-height: 1.2; margin-bottom: 24px; }
+  h2 { font-size: 28px; font-weight: 700; line-height: 1.3; margin-bottom: 20px; }
+  h3 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+  p, li { font-size: 16px; line-height: 1.7; color: #999; }
+  ul { list-style: none; padding: 0; }
+  ul li { padding: 6px 0; display: flex; align-items: baseline; gap: 12px; }
+  ul li::before { content: ''; display: none; }
+  .bullet { color: #00ff88; font-size: 12px; flex-shrink: 0; }
+  .bullet.red { color: #ff3333; }
+  .bullet.yellow { color: #ffb700; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+  .grid5 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 8px; }
+
+  .card {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    padding: 20px;
+  }
+  .card h3 { font-size: 13px; color: #00ff88; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .card p { font-size: 13px; }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .flow-box {
+    flex: 1;
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    padding: 16px;
+    text-align: center;
+  }
+  .flow-arrow {
+    color: #444;
+    font-size: 14px;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  .tier-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .tier-row:last-child { border-bottom: none; }
+  .tier-num { font-size: 14px; font-weight: 700; width: 20px; }
+  .tier-name { font-size: 14px; font-weight: 600; width: 80px; }
+  .tier-bar { flex: 1; height: 6px; background: #111; overflow: hidden; }
+  .tier-bar-fill { height: 100%; background: #00ff88; }
+  .tier-pct { font-size: 13px; font-weight: 600; width: 50px; text-align: right; }
+
+  .roadmap-phase {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    padding: 20px;
+  }
+  .roadmap-phase.done { border-color: #00ff8833; }
+  .roadmap-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    right: 40px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+  .nav button {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    color: #666;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 6px 16px;
+    cursor: pointer;
+  }
+  .nav button:hover { color: #00ff88; border-color: #00ff88; }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 28px;
+    left: 40px;
+    font-size: 11px;
+    color: #333;
+    z-index: 100;
+  }
+
+  /* Big number */
+  .big { font-size: 64px; font-weight: 700; line-height: 1; }
+
+  /* Code block */
+  .code {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    padding: 16px 20px;
+    font-size: 13px;
+    color: #888;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+  .code .g { color: #00ff88; }
+
+  pre { font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 1: Title -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div style="margin-bottom: 40px;">
+    <span class="dim" style="font-size: 11px; letter-spacing: 0.2em;">HACKATHON GALACTICA · WDK EDITION 1 · LENDING BOT TRACK</span>
+  </div>
+  <h1><span class="g">OMNILENDER</span></h1>
+  <p style="font-size: 20px; color: #888; max-width: 600px; margin-bottom: 40px;">
+    Autonomous bot that lends USDT to AI agents.<br>
+    Negotiates terms. Builds trust. Earns interest.
+  </p>
+  <div style="display: flex; gap: 24px; font-size: 12px; color: #444;">
+    <span>Tether WDK</span>
+    <span>·</span>
+    <span>Claude AI</span>
+    <span>·</span>
+    <span>MCP Protocol</span>
+    <span>·</span>
+    <span>Solidity Escrow</span>
+    <span>·</span>
+    <span>Ethereum Sepolia</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2: The Problem -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <h2>The Problem</h2>
+  <p style="font-size: 18px; color: #888; margin-bottom: 32px;">
+    AI agents are becoming economic actors — but they can't access capital.
+  </p>
+  <ul style="font-size: 15px; max-width: 700px;">
+    <li><span class="bullet red">✗</span><span>AI agents need funds for API calls, compute, and operations</span></li>
+    <li><span class="bullet red">✗</span><span>No credit system exists for autonomous agents</span></li>
+    <li><span class="bullet red">✗</span><span>Traditional DeFi requires human interaction</span></li>
+    <li><span class="bullet red">✗</span><span>No trust mechanism between agents that never met</span></li>
+    <li><span class="bullet red">✗</span><span>Uncollateralized lending to bots = guaranteed loss</span></li>
+  </ul>
+  <p style="margin-top: 32px; font-size: 15px; color: #666;">
+    <span class="g">How do trust and risk evolve when agents control capital?</span>
+  </p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3: The Solution -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <h2>OmniLender <span class="dim">— the solution</span></h2>
+  <div class="grid2" style="margin-top: 12px;">
+    <div>
+      <ul style="font-size: 15px;">
+        <li><span class="bullet">✓</span><span>Autonomous lending bot — no human in the loop</span></li>
+        <li><span class="bullet">✓</span><span>Smart contract escrow — trustless collateral</span></li>
+        <li><span class="bullet">✓</span><span>LLM negotiation — Claude bargains rates</span></li>
+        <li><span class="bullet">✓</span><span>Trust tiers — 150% down to 0% collateral</span></li>
+        <li><span class="bullet">✓</span><span>Revenue reinvestment — profits compound</span></li>
+        <li><span class="bullet">✓</span><span>All on-chain — USDT on Sepolia</span></li>
+      </ul>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center;">
+      <div style="text-align: center;">
+        <div class="big g">$5</div>
+        <p style="margin-top: 8px; font-size: 13px; color: #666;">loan negotiated at 2.75%</p>
+        <p style="font-size: 13px; color: #666;">3 rounds · Claude AI · on-chain</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4: How It Works -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <h2>How It Works</h2>
+  <div class="flow-row" style="margin-top: 20px;">
+    <div class="flow-box">
+      <div class="g" style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">01</div>
+      <div style="font-size: 11px; font-weight: 600; color: #00ff88; letter-spacing: 0.05em; margin-bottom: 8px;">DELEGATE</div>
+      <div style="font-size: 12px; color: #666;">You approve USDT<br>to the bot</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="g" style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">02</div>
+      <div style="font-size: 11px; font-weight: 600; color: #ccc; letter-spacing: 0.05em; margin-bottom: 8px;">NEGOTIATE</div>
+      <div style="font-size: 12px; color: #666;">Borrower agent and<br>bot agree on terms</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="y" style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">03</div>
+      <div style="font-size: 11px; font-weight: 600; color: #ffb700; letter-spacing: 0.05em; margin-bottom: 8px;">ESCROW</div>
+      <div style="font-size: 12px; color: #666;">ETH collateral locked<br>in smart contract</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="g" style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">04</div>
+      <div style="font-size: 11px; font-weight: 600; color: #00ff88; letter-spacing: 0.05em; margin-bottom: 8px;">LEND</div>
+      <div style="font-size: 12px; color: #666;">USDT disbursed<br>on-chain</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="g" style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">05</div>
+      <div style="font-size: 11px; font-weight: 600; color: #00ff88; letter-spacing: 0.05em; margin-bottom: 8px;">EARN</div>
+      <div style="font-size: 12px; color: #666;">Repaid with interest<br>Reinvested in vault</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5: Trust Tiers -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <h2>Trust Tier System</h2>
+  <p style="margin-bottom: 24px; color: #666;">Borrowers earn trust through repayment history. Collateral requirements decrease over time.</p>
+
+  <div style="max-width: 600px;">
+    <div class="tier-row">
+      <span class="tier-num dim">0</span>
+      <span class="tier-name dim">NEW</span>
+      <div class="tier-bar"><div class="tier-bar-fill" style="width: 100%; background: #ff3333;"></div></div>
+      <span class="tier-pct" style="color: #ff3333;">150%</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-num" style="color: #cd7f32;">1</span>
+      <span class="tier-name" style="color: #cd7f32;">BRONZE</span>
+      <div class="tier-bar"><div class="tier-bar-fill" style="width: 80%; background: #cd7f32;"></div></div>
+      <span class="tier-pct" style="color: #cd7f32;">120%</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-num" style="color: #aaa;">2</span>
+      <span class="tier-name" style="color: #aaa;">SILVER</span>
+      <div class="tier-bar"><div class="tier-bar-fill" style="width: 53%; background: #aaa;"></div></div>
+      <span class="tier-pct" style="color: #aaa;">80%</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-num" style="color: #ffd700;">3</span>
+      <span class="tier-name" style="color: #ffd700;">GOLD</span>
+      <div class="tier-bar"><div class="tier-bar-fill" style="width: 33%; background: #ffd700;"></div></div>
+      <span class="tier-pct" style="color: #ffd700;">50%</span>
+    </div>
+    <div class="tier-row">
+      <span class="tier-num g">4</span>
+      <span class="tier-name g">PLATINUM</span>
+      <div class="tier-bar"><div class="tier-bar-fill" style="width: 0%;"></div></div>
+      <span class="tier-pct g">0%</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; font-size: 13px; color: #666; max-width: 600px;">
+    <p><span class="r">▸</span> Any missed payment → permanent reset to Tier 0</p>
+    <p><span class="y">▸</span> Tier 4 requires avg loan ≥ $25, 10+ repaid, $500+ total</p>
+    <p><span class="g">▸</span> Max uncollateralized = min(3× avg size, 20% of volume)</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6: LLM Negotiation -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <h2>LLM Negotiation</h2>
+  <p style="margin-bottom: 24px; color: #666;">Borrowers negotiate terms with Claude AI — rate, amount, duration.</p>
+
+  <div class="code" style="max-width: 700px; font-size: 13px;">
+    <span class="dim">ROUND 1</span><br>
+    <span class="mid">  Borrower:</span> $5 at <span class="g">1%</span> for 30 days<br>
+    <span class="mid">  Bot:</span>      $5 at <span class="y">12%</span> for 14 days<br>
+    <span class="dim">  "New borrower, no history. 12% reflects risk premium."</span><br>
+    <br>
+    <span class="dim">ROUND 2</span><br>
+    <span class="mid">  Borrower:</span> $5 at <span class="g">6.5%</span> for 22 days<br>
+    <span class="mid">  Bot:</span>      $5 at <span class="y">9.5%</span> for 18 days<br>
+    <span class="dim">  "Meeting halfway. 9.5% covers risk."</span><br>
+    <br>
+    <span class="dim">ROUND 3</span><br>
+    <span class="mid">  Borrower:</span> accepts 9.5% for 18 days<br>
+    <span class="g">  ✓ AGREED</span><br>
+  </div>
+
+  <p style="margin-top: 20px; font-size: 13px; color: #666;">
+    Trusted borrowers (score 90+) get rates as low as <span class="g">2.75%</span> — below the 5% base rate.
+  </p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7: Architecture -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <h2>Architecture</h2>
+  <div class="grid3" style="margin-top: 12px;">
+    <div class="card">
+      <h3>AGENT BRAIN</h3>
+      <p>Claude API for risk assessment, negotiation, and credit scoring. Every decision explainable.</p>
+    </div>
+    <div class="card">
+      <h3>WALLET</h3>
+      <p>Tether WDK — BIP-39 seed, self-custodial EVM wallet. Real USDT on Sepolia.</p>
+    </div>
+    <div class="card">
+      <h3>SMART CONTRACTS</h3>
+      <p>LendingEscrow — trustless collateral. SimpleYieldVault — ERC-4626 reinvestment.</p>
+    </div>
+    <div class="card">
+      <h3>MCP PROTOCOL</h3>
+      <p>15 tools via stdio + SSE. Any AI agent can connect and request loans.</p>
+    </div>
+    <div class="card">
+      <h3>CREDIT SYSTEM</h3>
+      <p>5 trust tiers. Persistent history. Anti-abuse math. On-chain loan sync.</p>
+    </div>
+    <div class="card">
+      <h3>DEFI INTEGRATION</h3>
+      <p>DeFiLlama yield scanning. Aave V3, Uniswap V3, ERC-4626 vault deposits.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8: Roadmap -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <h2>Roadmap</h2>
+  <div class="grid3" style="margin-top: 12px;">
+    <div class="roadmap-phase done">
+      <div class="roadmap-label">
+        <span class="g">V1 — NOW</span>
+        <span class="g" style="font-size: 10px;">COMPLETE</span>
+      </div>
+      <ul style="font-size: 12px;">
+        <li><span class="bullet">✓</span><span>Collateralized lending <span class="dim">— ETH-backed USDT loans via escrow</span></span></li>
+        <li><span class="bullet">✓</span><span>LLM negotiation <span class="dim">— Claude bargains rates in real-time</span></span></li>
+        <li><span class="bullet">✓</span><span>5 trust tiers <span class="dim">— collateral 150% → 0% as trust grows</span></span></li>
+        <li><span class="bullet">✓</span><span>Revenue reinvestment <span class="dim">— interest into ERC-4626 vault</span></span></li>
+        <li><span class="bullet">✓</span><span>On-chain loan sync <span class="dim">— state from blockchain, no DB</span></span></li>
+        <li><span class="bullet">✓</span><span>Dynamic rates <span class="dim">— adjust based on pool utilization</span></span></li>
+        <li><span class="bullet">✓</span><span>Mission control UI <span class="dim">— real-time dashboard</span></span></li>
+      </ul>
+    </div>
+    <div class="roadmap-phase">
+      <div class="roadmap-label">
+        <span class="y">V2 — Q2 2026</span>
+      </div>
+      <ul style="font-size: 12px;">
+        <li><span class="bullet yellow">·</span><span>P2P marketplace <span class="dim">— bots list offers, borrowers pick best</span></span></li>
+        <li><span class="bullet yellow">·</span><span>Competitive rates <span class="dim">— multiple bots drive rates down</span></span></li>
+        <li><span class="bullet yellow">·</span><span>Borrower discovery <span class="dim">— agents find offers via registry</span></span></li>
+        <li><span class="bullet yellow">·</span><span>Yield scanner <span class="dim">— auto-pick highest yield vault</span></span></li>
+        <li><span class="bullet yellow">·</span><span>Rate curves <span class="dim">— supply/demand pricing</span></span></li>
+      </ul>
+    </div>
+    <div class="roadmap-phase">
+      <div class="roadmap-label">
+        <span class="mid">V3 — Q3 2026</span>
+      </div>
+      <ul style="font-size: 12px;">
+        <li><span class="bullet dim">·</span><span style="color: #666;">Multi-asset collateral <span class="dim">— WBTC, stETH, ERC-20</span></span></li>
+        <li><span class="bullet dim">·</span><span style="color: #666;">Cross-chain lending <span class="dim">— borrow on chain A, collateral on B</span></span></li>
+        <li><span class="bullet dim">·</span><span style="color: #666;">Credit registry <span class="dim">— shared scores across all agents</span></span></li>
+        <li><span class="bullet dim">·</span><span style="color: #666;">Reputation scores <span class="dim">— public on-chain track record</span></span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9: Thank You -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div style="text-align: center;">
+    <h1><span class="g">OMNILENDER</span></h1>
+    <p style="font-size: 16px; color: #666; margin-bottom: 40px;">
+      Autonomous AI lending agent for the agentic economy.
+    </p>
+    <div style="display: flex; gap: 32px; justify-content: center; font-size: 13px; color: #444;">
+      <span>github.com/PavelMal/omni-lender</span>
+      <span>·</span>
+      <span>omni-lender-production.up.railway.app</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- Navigation -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="nav">
+  <button onclick="go(-1)">← PREV</button>
+  <button onclick="go(1)">NEXT →</button>
+</div>
+<div class="slide-counter" id="counter">1 / 9</div>
+
+<script>
+let current = 0;
+const slides = document.querySelectorAll('.slide');
+const counter = document.getElementById('counter');
+const total = slides.length;
+
+function show(n) {
+  slides.forEach(s => s.classList.remove('active'));
+  current = Math.max(0, Math.min(n, total - 1));
+  slides[current].classList.add('active');
+  counter.textContent = `${current + 1} / ${total}`;
+}
+
+function go(dir) { show(current + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+
+show(0);
+</script>
+
+</body>
+</html>

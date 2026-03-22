@@ -116,8 +116,8 @@ export function Landing() {
       {/* ── How it works (horizontal flow) ─────── */}
       <div style={{ marginBottom: s.xxxl }}>
         <div style={{
-          fontSize: f.lg, fontWeight: 700, color: c.textPrimary,
-          marginBottom: s.lg,
+          fontSize: f.xl, fontWeight: 700, color: c.textPrimary,
+          marginBottom: s.xl,
         }}>
           How does it work?
         </div>
@@ -164,8 +164,8 @@ export function Landing() {
       {/* ── Key Features ─────────────────────────── */}
       <div style={{ marginBottom: s.xxxl }}>
         <div style={{
-          fontSize: f.lg, fontWeight: 700, color: c.textPrimary,
-          marginBottom: s.lg,
+          fontSize: f.xl, fontWeight: 700, color: c.textPrimary,
+          marginBottom: s.xl,
         }}>
           Key Features
         </div>
@@ -188,8 +188,8 @@ export function Landing() {
       {/* ── Roadmap ──────────────────────────────── */}
       <div style={{ marginBottom: s.xxxl }}>
         <div style={{
-          fontSize: f.lg, fontWeight: 700, color: c.textPrimary,
-          marginBottom: s.lg,
+          fontSize: f.xl, fontWeight: 700, color: c.textPrimary,
+          marginBottom: s.xl,
         }}>
           Roadmap
         </div>
