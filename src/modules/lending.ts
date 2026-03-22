@@ -385,6 +385,7 @@ export interface LoanRequest {
   collateralTxHash?: string;
   collateralType?: 'ETH';
   negotiatedRate?: number;
+  ownerAddress?: string;
 }
 
 export interface Loan {
@@ -398,14 +399,15 @@ export interface Loan {
   dueDate: string;
   status: 'active' | 'repaid' | 'overdue';
   txHash: string;
+  ownerAddress?: string;      // which lender delegated funds for this loan
   // Collateral fields
   collateralType?: 'ETH';
-  collateralAmountWei?: string;   // stored as string for JSON safety with bigint
+  collateralAmountWei?: string;
   collateralAmountEth?: number;
   collateralValueUsd?: number;
   collateralTxHash?: string;
   ltvRatio?: number;
-  onChainLoanId?: number;     // LendingEscrow contract loan ID
+  onChainLoanId?: number;
 }
 
 interface BorrowerProfile {
@@ -814,6 +816,7 @@ export async function evaluateCollateralizedLoan(
     collateralTxHash: request.collateralTxHash,
     ltvRatio: actualLtv,
     onChainLoanId,
+    ownerAddress: request.ownerAddress,
   };
 
   activeLoans.push(loan);
@@ -1030,8 +1033,24 @@ export function getActiveLoans(): Loan[] {
   return activeLoans.filter(l => l.status === 'active');
 }
 
-export function getAllLoans(): Loan[] {
-  return [...activeLoans];
+export function getAllLoans(ownerAddress?: string): Loan[] {
+  if (!ownerAddress) return [...activeLoans];
+  return activeLoans.filter(l => !l.ownerAddress || l.ownerAddress === ownerAddress);
+}
+
+export function getModuleStatsForOwner(ownerAddress: string) {
+  const budget = getBudget(MODULE);
+  const ownerLoans = activeLoans.filter(l => !l.ownerAddress || l.ownerAddress === ownerAddress);
+  const repaidLoans = ownerLoans.filter(l => l.status === 'repaid');
+  return {
+    budget,
+    activeLoans: ownerLoans.filter(l => l.status === 'active').length,
+    totalLoans: ownerLoans.length,
+    totalLent: ownerLoans.reduce((sum, l) => sum + l.principal, 0),
+    totalRepaid: repaidLoans.reduce((sum, l) => sum + l.totalDue, 0),
+    totalInterestEarned: repaidLoans.reduce((sum, l) => sum + l.interest, 0),
+    overdueLoans: ownerLoans.filter(l => l.status === 'overdue').length,
+  };
 }
 
 export { TRUST_TIERS };

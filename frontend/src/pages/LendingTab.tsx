@@ -4,12 +4,12 @@ import { API_BASE } from '../api';
 
 type Filter = 'all' | 'active' | 'repaid' | 'overdue';
 
-export function LendingTab() {
+export function LendingTab({ ownerAddress }: { ownerAddress?: string }) {
   const [loans, setLoans] = useState<any[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
 
   useEffect(() => {
-    const f = () => fetch(`${API_BASE}/api/agent/all-loans`)
+    const f = () => fetch(`${API_BASE}/api/agent/all-loans${ownerAddress ? `?owner=${ownerAddress}` : ''}`)
       .then(r => r.ok ? r.json() : [])
       .then(d => { if (Array.isArray(d)) setLoans(d); })
       .catch(() => {});

@@ -247,8 +247,16 @@ export function registerMcpTools(server: McpServer): void {
           };
         }
 
+        // Get owner address from connected agents (first connected user)
+        let ownerAddr: string | undefined;
+        try {
+          const { getAllAgents } = await import('./web/agent-manager.js');
+          const agents = getAllAgents();
+          if (agents.size > 0) ownerAddr = agents.keys().next().value;
+        } catch {}
+
         const result = await evaluateCollateralizedLoan(
-          { borrowerAddress, borrowerName, amount, purpose, repaymentDays, collateralType: 'ETH' },
+          { borrowerAddress, borrowerName, amount, purpose, repaymentDays, collateralType: 'ETH', ownerAddress: ownerAddr },
           reason,
         );
 

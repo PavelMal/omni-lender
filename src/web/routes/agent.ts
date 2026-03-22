@@ -263,15 +263,16 @@ agentRouter.delete('/reset/:addr', async (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /lending-stats — global lending module stats (earnings, active loans, etc.)
-agentRouter.get('/lending-stats', async (_req, res) => {
-  const { getCreditProfile, getAllLoans } = await import('../../modules/lending.js');
+// GET /lending-stats — lending stats filtered by owner
+agentRouter.get('/lending-stats', async (req, res) => {
+  const { getCreditProfile, getAllLoans, getModuleStatsForOwner } = await import('../../modules/lending.js');
   const { getDynamicRate } = await import('../../modules/lending.js');
-  const stats = getLendingStats();
+  const owner = req.query.owner as string | undefined;
+  const stats = owner ? getModuleStatsForOwner(owner.toLowerCase()) : getLendingStats();
   const dynamicRate = getDynamicRate();
 
   // Build borrowers list from loan history
-  const loans = getAllLoans();
+  const loans = getAllLoans(owner?.toLowerCase());
   const borrowerMap = new Map<string, any>();
   for (const loan of loans) {
     const addr = loan.borrowerAddress;
@@ -338,16 +339,18 @@ agentRouter.post('/vault-withdraw', async (req, res) => {
   }
 });
 
-// GET /all-loans — all loans from lending module (global, not per-user)
-agentRouter.get('/all-loans', async (_req, res) => {
+// GET /all-loans — loans filtered by owner if ?owner= provided
+agentRouter.get('/all-loans', async (req, res) => {
   const { getAllLoans } = await import('../../modules/lending.js');
-  res.json(getAllLoans());
+  const owner = req.query.owner as string | undefined;
+  res.json(getAllLoans(owner?.toLowerCase()));
 });
 
-// GET /borrowers — borrower list with credit profiles
-agentRouter.get('/borrowers', async (_req, res) => {
+// GET /borrowers — borrower list filtered by owner
+agentRouter.get('/borrowers', async (req, res) => {
   const { getCreditProfile, getAllLoans } = await import('../../modules/lending.js');
-  const loans = getAllLoans();
+  const owner = req.query.owner as string | undefined;
+  const loans = getAllLoans(owner?.toLowerCase());
   const seen = new Set<string>();
   const borrowers = [];
   for (const loan of loans) {

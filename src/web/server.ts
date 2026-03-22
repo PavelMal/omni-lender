@@ -117,14 +117,15 @@ if (existsSync(frontendDist)) {
 
 // Initialize operator wallet + wallet-os core (for MCP tools), then start server
 Promise.all([initOperator(), initWallet(undefined, 1000)]).then(async ([operatorAddr]) => {
-  // Sync loans from on-chain at startup
-  try {
-    const { syncLoansFromChain } = await import('../modules/lending.js');
-    const synced = await syncLoansFromChain();
-    if (synced > 0) log.info(`Restored ${synced} loans from on-chain`);
-  } catch (err) {
-    log.warn(`On-chain loan sync skipped: ${String(err).slice(0, 60)}`);
-  }
+  // On-chain sync disabled for clean demo experience
+  // To enable: uncomment syncLoansFromChain() below
+  // try {
+  //   const { syncLoansFromChain } = await import('../modules/lending.js');
+  //   const synced = await syncLoansFromChain();
+  //   if (synced > 0) log.info(`Restored ${synced} loans from on-chain`);
+  // } catch (err) {
+  //   log.warn(`On-chain loan sync skipped: ${String(err).slice(0, 60)}`);
+  // }
 
   server.listen(PORT, () => {
     log.info(`Web server running on http://localhost:${PORT}`);

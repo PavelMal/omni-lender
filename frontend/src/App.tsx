@@ -102,7 +102,7 @@ export default function App() {
 
   useEffect(() => {
     if (!agentReady) return;
-    const f = () => fetch(`${API_BASE}/agent/lending-stats`).then(r => r.ok ? r.json() : null).then(setLendingStats).catch(() => {});
+    const f = () => fetch(`${API_BASE}/agent/lending-stats?owner=${address}`).then(r => r.ok ? r.json() : null).then(setLendingStats).catch(() => {});
     f(); const i = setInterval(f, 5000); return () => clearInterval(i);
   }, [agentReady]);
 
@@ -208,7 +208,7 @@ export default function App() {
           <BorrowersTab lendingStats={lendingStats} />
         )}
         {tab === 'loans' && (
-          <LendingTab />
+          <LendingTab ownerAddress={address!} />
         )}
         {tab === 'vault' && (
           <VaultTab lendingStats={lendingStats} ownerAddress={address!} />

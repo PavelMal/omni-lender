@@ -33,7 +33,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
 
   // Fetch all loans
   useEffect(() => {
-    const f = () => fetch(`${API_BASE}/api/agent/all-loans`)
+    const f = () => fetch(`${API_BASE}/api/agent/all-loans${ownerAddress ? `?owner=${ownerAddress}` : ''}`)
       .then(r => r.ok ? r.json() : [])
       .then(d => { if (Array.isArray(d)) setAllLoans(d); })
       .catch(() => {});
