@@ -8,6 +8,7 @@ import { SetupFlow } from './components/setup/SetupFlow';
 import { OverviewTab } from './pages/OverviewTab';
 import { LendingTab } from './pages/LendingTab';
 import { BorrowersTab } from './pages/BorrowersTab';
+import { VaultTab } from './pages/VaultTab';
 import { AuditFeed } from './components/AuditFeed';
 import { ConnectWallet } from './components/ConnectWallet';
 import { useWriteContract } from 'wagmi';
@@ -65,12 +66,13 @@ if (typeof document !== 'undefined' && !document.querySelector('[data-omni-font]
   document.head.appendChild(style);
 }
 
-type Tab = 'overview' | 'borrowers' | 'loans' | 'activity';
+type Tab = 'overview' | 'borrowers' | 'loans' | 'vault' | 'activity';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview',  label: 'OVERVIEW' },
   { key: 'borrowers', label: 'BORROWERS' },
   { key: 'loans',     label: 'LOANS' },
+  { key: 'vault',     label: 'VAULT' },
   { key: 'activity',  label: 'ACTIVITY' },
 ];
 
@@ -199,6 +201,9 @@ export default function App() {
         )}
         {tab === 'loans' && (
           <LendingTab />
+        )}
+        {tab === 'vault' && (
+          <VaultTab lendingStats={lendingStats} ownerAddress={address!} />
         )}
         {tab === 'activity' && (
           <div style={{

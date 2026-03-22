@@ -26,7 +26,7 @@ const stepInfo = [
   {
     number: 3,
     title: 'Ready to Go',
-    description: 'Your agent is configured and ready to manage your portfolio autonomously.',
+    description: 'Your lending bot is configured and ready to operate.',
   },
 ];
 
@@ -72,7 +72,7 @@ export function SetupFlow({ ownerAddress, onReady }: Props) {
           marginBottom: spacing.md,
           letterSpacing: -0.5,
         }}>
-          Set Up Your Agent
+          Set Up Your Lending Bot
         </h2>
         <p style={{
           fontSize: fontSizes.lg,
@@ -81,7 +81,7 @@ export function SetupFlow({ ownerAddress, onReady }: Props) {
           margin: '0 auto',
           lineHeight: 1.6,
         }}>
-          Three steps to deploy your autonomous AI economic agent on Sepolia.
+          Three steps to start earning from autonomous AI lending.
         </p>
       </div>
 
@@ -332,9 +332,8 @@ export function SetupFlow({ ownerAddress, onReady }: Props) {
               margin: '0 auto',
               marginBottom: spacing.xxl,
             }}>
-              Your agent is configured and ready to operate. It will autonomously manage
-              DeFi positions, lending, and tipping within the budget you approved. All
-              decisions are logged with full reasoning in the audit trail.
+              Your lending bot is ready. It will autonomously issue loans, negotiate terms,
+              and manage risk within the budget you approved. Every decision is logged in real-time.
             </p>
             <button
               onClick={handleActivate}
