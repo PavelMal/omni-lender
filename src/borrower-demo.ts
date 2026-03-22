@@ -23,7 +23,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { ethers } from 'ethers';
 
-const COLLATERAL_ETH = '0.003';
+const COLLATERAL_ETH = '0.005';
 const LOAN_AMOUNT = 5; // USDT — matches negotiation amount
 
 function parse(result: any): any {
