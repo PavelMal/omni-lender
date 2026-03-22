@@ -31,6 +31,7 @@ export interface AuditEntry {
   txHash?: string;
   reasoning: string;
   status: 'approved' | 'rejected' | 'executed' | 'failed' | 'info';
+  ownerAddress?: string;
 }
 
 export interface BudgetAllocation {

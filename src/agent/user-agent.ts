@@ -119,6 +119,7 @@ export class UserAgent {
   positions: DeFiPosition[] = [];
   loans: Loan[] = [];
   auditLog: AuditEntry[] = [];
+  readonly createdAt: string = new Date().toISOString();
   borrowerProfiles: Record<string, { totalLoans: number; repaidLoans: number; defaultedLoans: number }> = {};
 
   // Notification callback

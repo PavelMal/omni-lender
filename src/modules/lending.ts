@@ -1035,12 +1035,12 @@ export function getActiveLoans(): Loan[] {
 
 export function getAllLoans(ownerAddress?: string): Loan[] {
   if (!ownerAddress) return [...activeLoans];
-  return activeLoans.filter(l => !l.ownerAddress || l.ownerAddress === ownerAddress);
+  return activeLoans.filter(l => l.ownerAddress === ownerAddress);
 }
 
 export function getModuleStatsForOwner(ownerAddress: string) {
   const budget = getBudget(MODULE);
-  const ownerLoans = activeLoans.filter(l => !l.ownerAddress || l.ownerAddress === ownerAddress);
+  const ownerLoans = activeLoans.filter(l => l.ownerAddress === ownerAddress);
   const repaidLoans = ownerLoans.filter(l => l.status === 'repaid');
   return {
     budget,

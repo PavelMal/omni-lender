@@ -150,8 +150,13 @@ agentRouter.get('/audit/:addr', async (req, res) => {
   const userEntries = agent ? agent.auditLog : [];
   const globalEntries = getAuditLog();
 
-  // Merge and sort by timestamp, return latest
-  const all = [...userEntries, ...globalEntries]
+  // Only show global entries created after agent connected (per-user view)
+  const agentCreatedAt = agent?.createdAt ?? new Date().toISOString();
+  const filteredGlobal = globalEntries.filter(e =>
+    e.timestamp >= agentCreatedAt
+  );
+
+  const all = [...userEntries, ...filteredGlobal]
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .slice(-limit);
 
