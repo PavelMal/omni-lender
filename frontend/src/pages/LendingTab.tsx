@@ -13,7 +13,7 @@ export function LendingTab({ ownerAddress }: { ownerAddress?: string }) {
       .then(r => r.ok ? r.json() : [])
       .then(d => { if (Array.isArray(d)) setLoans(d); })
       .catch(() => {});
-    f(); const i = setInterval(f, 5000); return () => clearInterval(i);
+    f(); const i = setInterval(f, 2000); return () => clearInterval(i);
   }, []);
 
   const c = colors, s = spacing, f = fontSizes;

@@ -37,7 +37,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
       .then(r => r.ok ? r.json() : [])
       .then(d => { if (Array.isArray(d)) setAllLoans(d); })
       .catch(() => {});
-    f(); const i = setInterval(f, 8000); return () => clearInterval(i);
+    f(); const i = setInterval(f, 2000); return () => clearInterval(i);
   }, []);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
       .then(r => r.ok ? r.json() : [])
       .then(d => setEvents((Array.isArray(d) ? d : []).filter(isLending).slice(-8).reverse()))
       .catch(() => {});
-    f(); const i = setInterval(f, 6000); return () => clearInterval(i);
+    f(); const i = setInterval(f, 2000); return () => clearInterval(i);
   }, [ownerAddress]);
 
   const c = colors, s = spacing, f = fontSizes;

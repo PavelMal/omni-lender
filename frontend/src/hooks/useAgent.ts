@@ -66,7 +66,7 @@ export function useAgent(ownerAddress: string | undefined) {
   // Poll every 5 seconds
   useEffect(() => {
     refresh();
-    const interval = setInterval(refresh, 5000);
+    const interval = setInterval(refresh, 2000);
     return () => clearInterval(interval);
   }, [refresh]);
 
