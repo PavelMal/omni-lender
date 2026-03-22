@@ -225,17 +225,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
             );
           })}
 
-          {/* Dynamic rate */}
-          {rate > 0 && (
-            <div style={{
-              padding: `${s.sm}px ${s.md}px`,
-              borderTop: `1px solid ${c.border}`,
-              display: 'flex', justifyContent: 'space-between',
-            }}>
-              <span style={{ fontSize: 9, color: c.textMuted, letterSpacing: '0.1em' }}>BASE RATE</span>
-              <span style={{ fontSize: f.xs, color: c.accent, fontWeight: 600 }}>{rate.toFixed(1)}%</span>
-            </div>
-          )}
+          {/* empty — base rate removed, it confused users here */}
         </div>
 
         {/* ── Live decision feed ── */}
