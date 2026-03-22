@@ -130,7 +130,8 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
           border: `1px solid ${c.border}`,
           borderRadius: radii.sm,
           background: c.bgCard,
-          overflow: 'hidden',
+          overflow: 'visible',
+          position: 'relative',
         }}>
           {/* Header */}
           <div style={{
@@ -158,16 +159,28 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
             </span>
           </div>
 
+          {/* Tier info popup */}
           {showTierInfo && (
-            <div style={{
-              padding: `${s.sm}px ${s.md}px`,
-              borderBottom: `1px solid ${c.border}`,
-              fontSize: 9, color: c.textSecondary, lineHeight: 1.6,
-            }}>
-              Borrowers start at Tier 0 (150% collateral). Each repaid loan improves their tier.
-              Higher tiers require less collateral. Tier 4 = no collateral needed.
-              Any default resets to Tier 0.
-            </div>
+            <>
+              <div onClick={() => setShowTierInfo(false)} style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999,
+              }} />
+              <div style={{
+                position: 'absolute', top: 36, left: 0, zIndex: 1000,
+                background: c.bgCard, border: `1px solid ${c.border}`,
+                borderRadius: radii.sm, padding: s.md,
+                width: 280, fontFamily: fonts.mono,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              }}>
+                <div style={{ fontSize: 9, color: c.textSecondary, lineHeight: 1.8 }}>
+                  <div>Borrowers put up ETH as collateral to get USDT loans.</div>
+                  <div style={{ marginTop: 4 }}>New borrowers must deposit 150% of the loan value.</div>
+                  <div style={{ marginTop: 4 }}>Each repaid loan builds trust — the bot requires less collateral.</div>
+                  <div style={{ marginTop: 4 }}>Trusted borrowers (Tier 4) can borrow with no collateral at all.</div>
+                  <div style={{ marginTop: 4, color: c.danger }}>A single missed payment resets trust to zero.</div>
+                </div>
+              </div>
+            </>
           )}
 
           {TIERS.map((name, i) => {
