@@ -8,7 +8,9 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "start": "tsx src/main.ts",
+    "start": "tsx src/web/server.ts",
+    "start:standalone": "tsx src/main.ts",
+    "postinstall": "cd frontend && npm install --legacy-peer-deps && npm run build",
     "demo": "tsx src/demo.ts",
     "demo:borrower": "tsx src/borrower-demo.ts",
     "demo:borrower:web": "tsx src/borrower-demo.ts --http",
