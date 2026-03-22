@@ -60,5 +60,5 @@ frontend/dist/
 
 # Docs (internal files gitignored, except presentation)
 docs/
-!docs/presentation.html
+!docs/index.html
 frontend/tsconfig.tsbuildinfo
