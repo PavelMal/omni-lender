@@ -192,7 +192,7 @@ export default function App() {
       {/* ══ Content ══════════════════════════════════════════════════ */}
       <div style={{ padding: `${s.lg}px 0` }}>
         {tab === 'overview' && (
-          <OverviewTab status={status} ownerAddress={address!} lendingStats={lendingStats} />
+          <OverviewTab status={status} ownerAddress={address!} lendingStats={lendingStats} onGoToActivity={() => setTab('activity')} />
         )}
         {tab === 'borrowers' && (
           <BorrowersTab lendingStats={lendingStats} />

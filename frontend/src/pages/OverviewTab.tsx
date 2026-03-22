@@ -10,6 +10,7 @@ interface Props {
   ownerAddress: string;
   lendingStats: any;
   onShowAudit?: () => void;
+  onGoToActivity?: () => void;
 }
 
 const LK = ['loan', 'negotiation', 'collateral', 'interest', 'liquidat', 'repay', 'credit'];
@@ -22,10 +23,12 @@ const TIERS = ['NEW', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM'];
 const TIER_PCT = [150, 120, 80, 50, 0];
 const TIER_COLORS = [colors.textMuted, '#cd7f32', '#aaa', '#ffd700', colors.accent];
 
-export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }: Props) {
+export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, onGoToActivity }: Props) {
   const [events, setEvents] = useState<any[]>([]);
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [revoking, setRevoking] = useState(false);
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [showTierInfo, setShowTierInfo] = useState(false);
   const { writeContract } = useWriteContract();
 
   // Fetch all loans
@@ -90,21 +93,7 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
               {/* Revoke button on DELEGATED */}
               {m.hasRevoke && (
                 <button
-                  onClick={() => {
-                    if (!confirm('Revoke all delegated USDT from the bot?')) return;
-                    setRevoking(true);
-                    const opAddr = status?.operatorAddress;
-                    if (!opAddr) { setRevoking(false); return; }
-                    writeContract({
-                      address: USDT_CONTRACT,
-                      abi: USDT_ABI,
-                      functionName: 'approve',
-                      args: [opAddr as `0x${string}`, BigInt(0)],
-                    }, {
-                      onSuccess: () => { setRevoking(false); window.location.reload(); },
-                      onError: () => { setRevoking(false); },
-                    });
-                  }}
+                  onClick={() => setShowRevokeModal(true)}
                   style={{
                     fontSize: 8, fontWeight: 700, color: c.danger,
                     background: 'transparent',
@@ -149,13 +138,37 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
             borderBottom: `1px solid ${c.border}`,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <span style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em' }}>
-              TRUST TIERS
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: s.xs }}>
+              <span style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em' }}>
+                TRUST TIERS
+              </span>
+              <button
+                onClick={() => setShowTierInfo(!showTierInfo)}
+                style={{
+                  width: 14, height: 14, borderRadius: '50%',
+                  border: `1px solid ${c.border}`, background: 'transparent',
+                  color: c.textMuted, fontSize: 9, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: fonts.mono,
+                }}
+              >?</button>
+            </div>
             <span style={{ fontSize: 9, color: c.textMuted }}>
               COLLATERAL
             </span>
           </div>
+
+          {showTierInfo && (
+            <div style={{
+              padding: `${s.sm}px ${s.md}px`,
+              borderBottom: `1px solid ${c.border}`,
+              fontSize: 9, color: c.textSecondary, lineHeight: 1.6,
+            }}>
+              Borrowers start at Tier 0 (150% collateral). Each repaid loan improves their tier.
+              Higher tiers require less collateral. Tier 4 = no collateral needed.
+              Any default resets to Tier 0.
+            </div>
+          )}
 
           {TIERS.map((name, i) => {
             const tierColor = TIER_COLORS[i];
@@ -274,11 +287,16 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
                       boxShadow: `0 0 4px ${dot}66`,
                       flexShrink: 0,
                     }} />
-                    <span style={{
-                      fontSize: f.xs, color: dot,
-                      fontWeight: 600, flex: 1,
-                      letterSpacing: '0.02em',
-                    }}>
+                    <span
+                      onClick={onGoToActivity}
+                      style={{
+                        fontSize: f.xs, color: dot,
+                        fontWeight: 600, flex: 1,
+                        letterSpacing: '0.02em',
+                        cursor: onGoToActivity ? 'pointer' : 'default',
+                      }}
+                      title="View in Activity tab"
+                    >
                       {action}
                     </span>
                     {e.amount != null && (
@@ -362,6 +380,66 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit }:
           </table>
         )}
       </div>
+
+      {/* ── Revoke Modal ─────────────────────────────────────────── */}
+      {showRevokeModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: c.bgCard, border: `1px solid ${c.danger}33`,
+            borderRadius: radii.sm, padding: s.xl,
+            maxWidth: 360, width: '100%', fontFamily: fonts.mono,
+          }}>
+            <div style={{ fontSize: 9, fontWeight: 600, color: c.danger, letterSpacing: '0.1em', marginBottom: s.md }}>
+              REVOKE DELEGATION
+            </div>
+            <div style={{ fontSize: f.xs, color: c.textSecondary, marginBottom: s.xl, lineHeight: 1.6 }}>
+              This will set USDT allowance to 0. The bot will no longer be able to issue loans with your funds.
+            </div>
+            <div style={{ display: 'flex', gap: s.sm, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowRevokeModal(false)}
+                style={{
+                  padding: `${s.xs}px ${s.lg}px`, background: 'transparent',
+                  border: `1px solid ${c.border}`, borderRadius: radii.sm,
+                  color: c.textMuted, fontSize: f.xs, cursor: 'pointer',
+                  fontFamily: fonts.mono, letterSpacing: '0.05em',
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  setShowRevokeModal(false);
+                  setRevoking(true);
+                  const opAddr = status?.operatorAddress;
+                  if (!opAddr) { setRevoking(false); return; }
+                  writeContract({
+                    address: USDT_CONTRACT,
+                    abi: USDT_ABI,
+                    functionName: 'approve',
+                    args: [opAddr as `0x${string}`, BigInt(0)],
+                  }, {
+                    onSuccess: () => { setRevoking(false); window.location.reload(); },
+                    onError: () => { setRevoking(false); },
+                  });
+                }}
+                style={{
+                  padding: `${s.xs}px ${s.lg}px`, background: c.danger,
+                  border: 'none', borderRadius: radii.sm,
+                  color: '#000', fontSize: f.xs, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: fonts.mono, letterSpacing: '0.05em',
+                }}
+              >
+                {revoking ? 'REVOKING...' : 'REVOKE'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
