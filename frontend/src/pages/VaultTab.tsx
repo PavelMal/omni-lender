@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { colors, spacing, radii, fontSizes, fonts } from '../styles/tokens';
 import { API_BASE } from '../api';
+import { useWriteContract } from 'wagmi';
 
 const c = colors, s = spacing, f = fontSizes;
 
@@ -12,6 +13,8 @@ function isReinvest(e: any): boolean {
 
 export function VaultTab({ lendingStats, ownerAddress }: { lendingStats: any; ownerAddress: string }) {
   const [events, setEvents] = useState<any[]>([]);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawResult, setWithdrawResult] = useState<string | null>(null);
   const profit = lendingStats?.totalInterestEarned ?? 0;
 
   useEffect(() => {
@@ -27,12 +30,60 @@ export function VaultTab({ lendingStats, ownerAddress }: { lendingStats: any; ow
       {/* Vault metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, background: c.border }}>
         <div style={{ background: c.bgCard, padding: `${s.lg}px ${s.md}px` }}>
-          <div style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em', marginBottom: s.sm }}>
-            TOTAL REINVESTED
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: s.sm,
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em' }}>
+              TOTAL REINVESTED
+            </span>
+            {profit > 0 && (
+              <button
+                onClick={async () => {
+                  setWithdrawing(true);
+                  setWithdrawResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/api/agent/vault-withdraw`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ to: ownerAddress }),
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                      setWithdrawResult(`Withdrawn $${data.amount?.toFixed(2) ?? profit.toFixed(2)} to your wallet`);
+                    } else {
+                      const err = data.error ?? 'Failed';
+                      setWithdrawResult(err.length > 60 ? 'Withdraw failed — try again later' : err);
+                    }
+                  } catch {
+                    setWithdrawResult('Withdraw failed — try again later');
+                  }
+                  setWithdrawing(false);
+                }}
+                disabled={withdrawing}
+                style={{
+                  fontSize: 8, fontWeight: 700, color: c.warning,
+                  background: 'transparent',
+                  border: `1px solid ${c.warning}33`,
+                  borderRadius: radii.sm,
+                  padding: '1px 6px', cursor: 'pointer',
+                  fontFamily: fonts.mono, textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  opacity: withdrawing ? 0.5 : 1,
+                }}
+              >
+                {withdrawing ? '...' : 'WITHDRAW'}
+              </button>
+            )}
           </div>
           <div style={{ fontSize: 20, fontWeight: 700, color: c.accent, fontVariantNumeric: 'tabular-nums' }}>
             ${profit.toFixed(2)}
           </div>
+          {withdrawResult && (
+            <div style={{ fontSize: f.xs, color: c.textSecondary, marginTop: s.xs }}>
+              {withdrawResult}
+            </div>
+          )}
         </div>
         <div style={{ background: c.bgCard, padding: `${s.lg}px ${s.md}px` }}>
           <div style={{ fontSize: 9, fontWeight: 600, color: c.textMuted, letterSpacing: '0.1em', marginBottom: s.sm }}>

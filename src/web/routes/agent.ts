@@ -292,6 +292,52 @@ agentRouter.get('/lending-stats', async (_req, res) => {
   res.json({ ...stats, dynamicRate, borrowers: Array.from(borrowerMap.values()) });
 });
 
+// POST /vault-withdraw — withdraw all from yield vault to user
+agentRouter.post('/vault-withdraw', async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) { res.status(400).json({ error: 'to address required' }); return; }
+
+    const { sendRawTransaction, getWdkAddress } = await import('../../wallet-os/wdk-wallet.js');
+    const { getUserVaultBalance, buildVaultWithdrawCalls } = await import('../../defi/erc4626.js');
+    const vaultAddr = process.env.YIELD_VAULT_ADDRESS;
+    if (!vaultAddr) { res.status(500).json({ error: 'YIELD_VAULT_ADDRESS not set' }); return; }
+
+    const agentAddr = getWdkAddress() as any;
+    const balance = await getUserVaultBalance(vaultAddr as any, agentAddr);
+    if (balance === BigInt(0)) { res.status(400).json({ error: 'Nothing to withdraw' }); return; }
+
+    // withdraw(assets, receiver=to, owner=agent)
+    const { encodeFunctionData } = await import('viem');
+    const withdrawData = encodeFunctionData({
+      abi: [{
+        name: 'withdraw',
+        type: 'function',
+        inputs: [
+          { name: 'assets', type: 'uint256' },
+          { name: 'receiver', type: 'address' },
+          { name: 'owner', type: 'address' },
+        ],
+        outputs: [{ name: '', type: 'uint256' }],
+        stateMutability: 'nonpayable',
+      }],
+      functionName: 'withdraw',
+      args: [balance, to as `0x${string}`, agentAddr as `0x${string}`],
+    });
+
+    const result = await sendRawTransaction(vaultAddr as any, withdrawData);
+    const amount = Number(balance) / 1e6;
+    res.json({ ok: true, txHash: result.hash, amount });
+  } catch (err) {
+    const errStr = String(err);
+    if (errStr.includes('INSUFFICIENT_FUNDS') || errStr.includes('insufficient funds')) {
+      res.status(400).json({ error: 'Bot needs ETH for gas — send Sepolia ETH to operator wallet' });
+    } else {
+      res.status(500).json({ error: 'Withdraw failed — try again later' });
+    }
+  }
+});
+
 // GET /all-loans — all loans from lending module (global, not per-user)
 agentRouter.get('/all-loans', async (_req, res) => {
   const { getAllLoans } = await import('../../modules/lending.js');
