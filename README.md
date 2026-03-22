@@ -165,45 +165,66 @@ See `src/borrower-demo.ts` for a complete integration example.
 
 ---
 
-## Quick Start
+## Local Setup
 
 ### Prerequisites
 - Node.js 20+
-- MetaMask with Sepolia ETH
+- MetaMask browser extension
+- Sepolia ETH (for gas) — get from a [Sepolia faucet](https://www.alchemy.com/faucets/ethereum-sepolia)
 
-### Setup
+### 1. Clone and install dependencies
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/PavelMal/omni-lender.git
 cd omni-lender
-npm install
+npm install                 # backend dependencies
+cd frontend && npm install  # frontend dependencies
+cd ..
+```
+
+### 2. Configure environment
+
+```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` with your keys:
 ```
 SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 OPERATOR_SEED_PHRASE=<your 12-word BIP-39 seed>
-ANTHROPIC_API_KEY=<your key>
+ANTHROPIC_API_KEY=<your Anthropic API key>
 LLM_MODEL=claude-sonnet-4-6
 LENDING_ESCROW_ADDRESS=0xe30Bfb13D17311c79216531e1716a077F9770a3E
 YIELD_VAULT_ADDRESS=0x6D250AA419108448409DA37B1027E01e4EedC851
 ```
 
-### Run
+### 3. Build frontend
 
 ```bash
-# Terminal 1: Start the agent
+cd frontend && npm run build && cd ..
+```
+
+### 4. Start backend server
+
+```bash
 npm run web
+```
 
-# Terminal 2: Build frontend
-cd frontend && npm install && npm run build
+This starts the Express backend on port 3001. It serves:
+- The frontend UI (from `frontend/dist/`)
+- REST API (`/api/...`)
+- MCP server via SSE (`/mcp/sse`)
+- WebSocket for real-time events
 
-# Open http://localhost:3001
+Open **http://localhost:3001** — connect MetaMask (Sepolia network), approve USDT delegation.
 
-# Terminal 3 (optional): Run borrower demo
+### 5. Run the borrower demo (separate terminal)
+
+```bash
 npm run demo:borrower:web
 ```
+
+Simulates an AI agent requesting a loan. Events appear in the dashboard in real-time.
 
 ### Demo Flow
 
