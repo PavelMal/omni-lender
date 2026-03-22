@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { colors, spacing, radii, fontSizes, fonts } from '../styles/tokens';
 
@@ -19,17 +20,33 @@ export function ConnectWallet() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   if (isConnected && address) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: spacing.sm,
-          padding: `3px ${spacing.sm}px`,
-          border: `1px solid ${colors.border}`,
-          borderRadius: radii.sm,
-          background: colors.bgCard,
-        }}>
+      <div ref={ref} style={{ position: 'relative' }}>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: spacing.sm,
+            padding: `3px ${spacing.sm}px`,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radii.sm,
+            background: colors.bgCard,
+            cursor: 'pointer',
+          }}
+        >
           <div style={{
             width: 6, height: 6, borderRadius: '50%',
             background: colors.accent,
@@ -44,24 +61,50 @@ export function ConnectWallet() {
           }}>
             {address.slice(0, 6)}...{address.slice(-4)}
           </span>
-        </div>
-        <button
-          onClick={() => disconnect()}
-          style={{
-            padding: `3px ${spacing.sm}px`,
-            borderRadius: radii.sm,
-            border: `1px solid ${colors.border}`,
-            background: 'transparent',
-            color: colors.textMuted,
-            cursor: 'pointer',
-            fontSize: fontSizes.xs,
-            fontFamily: fonts.mono,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}
-        >
-          DC
         </button>
+
+        {menuOpen && (
+          <div style={{
+            position: 'absolute', top: '100%', right: 0, marginTop: 4,
+            background: colors.bgCard,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radii.sm,
+            padding: spacing.xs,
+            zIndex: 100,
+            minWidth: 160,
+          }}>
+            <a
+              href={`https://sepolia.etherscan.io/address/${address}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'block',
+                padding: `${spacing.xs}px ${spacing.sm}px`,
+                fontSize: fontSizes.xs,
+                fontFamily: fonts.mono,
+                color: colors.textSecondary,
+                textDecoration: 'none',
+                letterSpacing: '0.05em',
+              }}
+            >
+              VIEW ON ETHERSCAN
+            </a>
+            <button
+              onClick={() => { disconnect(); setMenuOpen(false); }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: `${spacing.xs}px ${spacing.sm}px`,
+                background: 'none', border: 'none',
+                fontSize: fontSizes.xs,
+                fontFamily: fonts.mono,
+                color: colors.danger,
+                cursor: 'pointer',
+                letterSpacing: '0.05em',
+              }}
+            >
+              DISCONNECT
+            </button>
+          </div>
+        )}
       </div>
     );
   }
