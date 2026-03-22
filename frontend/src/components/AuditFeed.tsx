@@ -298,7 +298,7 @@ export function AuditFeed({ ownerAddress }: Props) {
               boxShadow: connected ? `0 0 6px ${colors.accent}` : 'none',
               animation: connected ? 'termBlink 2s infinite' : 'none',
             }} />
-            {connected ? 'LIVE' : 'OFFLINE'}
+            {connected ? 'LIVE' : 'CONNECTING'}
           </div>
         </div>
       </div>

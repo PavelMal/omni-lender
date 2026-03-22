@@ -83,7 +83,7 @@ export function LendingTab() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['BORROWER', 'PRINCIPAL', 'INTEREST', 'DUE DATE', 'STATUS', 'COLLATERAL'].map(h => (
+                {['BORROWER', 'PRINCIPAL', 'INTEREST', 'DUE DATE', 'STATUS', 'COLLATERAL', 'TX'].map(h => (
                   <th key={h} style={{
                     textAlign: 'left', padding: `${s.sm}px ${s.md}px`,
                     borderBottom: `1px solid ${c.border}`,
@@ -148,6 +148,19 @@ export function LendingTab() {
                       {loan.collateralAmountEth
                         ? `${loan.collateralAmountEth} ETH`
                         : '\u2014'}
+                    </td>
+                    <td style={{ padding: `${s.sm}px ${s.md}px`, fontSize: f.xs }}>
+                      {loan.txHash && loan.txHash.startsWith('0x') && loan.txHash.length > 20 ? (
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${loan.txHash}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ color: c.accent, textDecoration: 'none' }}
+                        >
+                          {loan.txHash.slice(0, 6)}...{loan.txHash.slice(-4)}
+                        </a>
+                      ) : (
+                        <span style={{ color: c.textMuted }}>{'\u2014'}</span>
+                      )}
                     </td>
                   </tr>
                 );
