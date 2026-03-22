@@ -38,7 +38,7 @@ export function BorrowersTab({ lendingStats }: { lendingStats: any }) {
     );
   }
 
-  const headers = ['BORROWER', 'SCORE', '', 'TIER', 'BORROWED', 'REPAID', 'ACTIVE', 'DEFAULTS'];
+  const headers = ['BORROWER', 'TIER', 'BORROWED', 'REPAID', 'ACTIVE'];
 
   return (
     <div style={{
@@ -85,87 +85,27 @@ export function BorrowersTab({ lendingStats }: { lendingStats: any }) {
             const tier = b.trustTier;
             const tierName = TIERS[tier] ?? 'NEW';
             const tierColor = TIER_COLORS[tier] ?? c.textMuted;
-            const scoreColor = b.creditScore >= 80 ? c.accent : b.creditScore >= 50 ? c.warning : c.danger;
-            const barW = `${Math.min(b.creditScore, 100)}%`;
 
             return (
               <tr key={b.address || i} style={{
                 borderBottom: i < borrowers.length - 1 ? `1px solid ${c.border}` : 'none',
               }}>
-                {/* Address */}
                 <td style={{ padding: `${s.sm}px ${s.md}px` }}>
                   <span style={{ fontSize: f.xs, color: c.textPrimary }}>{short}</span>
                 </td>
-
-                {/* Score number */}
-                <td style={{ padding: `${s.sm}px ${s.md}px`, width: 36 }}>
-                  <span style={{
-                    fontSize: f.xs, fontWeight: 700, color: scoreColor,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>
-                    {b.creditScore}
-                  </span>
-                </td>
-
-                {/* Score bar */}
-                <td style={{ padding: `${s.sm}px 0`, width: 70 }}>
-                  <div style={{
-                    width: 60, height: 3,
-                    background: c.border,
-                    borderRadius: 0, overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      width: barW, height: '100%',
-                      background: scoreColor,
-                      transition: 'width 0.3s',
-                      boxShadow: `0 0 4px ${scoreColor}44`,
-                    }} />
-                  </div>
-                </td>
-
-                {/* Tier */}
                 <td style={{ padding: `${s.sm}px ${s.md}px` }}>
-                  <span style={{
-                    fontSize: 9, fontWeight: 600,
-                    color: tierColor,
-                    letterSpacing: '0.05em',
-                  }}>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: tierColor, letterSpacing: '0.05em' }}>
                     {tierName}
                   </span>
                 </td>
-
-                {/* Borrowed */}
-                <td style={{
-                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
-                  color: c.textPrimary, fontVariantNumeric: 'tabular-nums',
-                }}>
+                <td style={{ padding: `${s.sm}px ${s.md}px`, fontSize: f.xs, color: c.textPrimary, fontVariantNumeric: 'tabular-nums' }}>
                   ${b.totalBorrowed.toFixed(2)}
                 </td>
-
-                {/* Repaid */}
-                <td style={{
-                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
-                  color: c.textSecondary, fontVariantNumeric: 'tabular-nums',
-                }}>
+                <td style={{ padding: `${s.sm}px ${s.md}px`, fontSize: f.xs, color: c.textSecondary, fontVariantNumeric: 'tabular-nums' }}>
                   ${b.totalRepaid.toFixed(2)}
                 </td>
-
-                {/* Active */}
-                <td style={{
-                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: b.activeLoans > 0 ? c.warning : c.textMuted,
-                }}>
+                <td style={{ padding: `${s.sm}px ${s.md}px`, fontSize: f.xs, fontVariantNumeric: 'tabular-nums', color: b.activeLoans > 0 ? c.warning : c.textMuted }}>
                   {b.activeLoans}
-                </td>
-
-                {/* Defaults */}
-                <td style={{
-                  padding: `${s.sm}px ${s.md}px`, fontSize: f.xs,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: b.defaultRate !== '0%' ? c.danger : c.textMuted,
-                }}>
-                  {b.defaultRate}
                 </td>
               </tr>
             );
