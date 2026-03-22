@@ -146,9 +146,11 @@ export function OverviewTab({ status, ownerAddress, lendingStats, onShowAudit, o
               <button
                 onClick={() => setShowTierInfo(!showTierInfo)}
                 style={{
-                  width: 14, height: 14, borderRadius: '50%',
-                  border: `1px solid ${c.border}`, background: 'transparent',
-                  color: c.textMuted, fontSize: 9, cursor: 'pointer',
+                  width: 16, height: 16, borderRadius: '50%',
+                  border: `1px solid ${showTierInfo ? c.accent : c.borderLight}`,
+                  background: showTierInfo ? `${c.accent}15` : 'transparent',
+                  color: showTierInfo ? c.accent : c.textSecondary,
+                  fontSize: 9, fontWeight: 700, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: fonts.mono,
                 }}
