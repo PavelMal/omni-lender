@@ -60,3 +60,4 @@ frontend/dist/
 
 # Docs (gitignored per project policy)
 docs/
+frontend/tsconfig.tsbuildinfo
